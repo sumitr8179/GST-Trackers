@@ -121,6 +121,16 @@
   #lock .box{background:#fff;border-radius:16px;padding:24px;width:min(360px,100%);text-align:center}
   #lock input{text-align:center;font-size:22px;letter-spacing:6px;margin:12px 0}
   #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#1d2330;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;display:none;z-index:120;max-width:90vw}
+  .att{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .att-it{display:grid;grid-template-columns:52px 1fr auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:#fafbfc}
+  .att-it .th{width:52px;height:52px;border-radius:8px;background:#e8edf3;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--brand);overflow:hidden;cursor:pointer}
+  .att-it .th img{width:100%;height:100%;object-fit:cover}
+  .att-it .th.pdf{background:#fdecea;color:var(--red)}
+  .att-it .ai{min-width:0;cursor:pointer}
+  .att-it .ai b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .att-it .ab{display:flex;gap:4px}
+  .att-it .ab button{padding:4px 8px;font-size:13px}
+  #viewImg{max-width:100%;max-height:70vh;display:block;margin:0 auto;border-radius:8px}
   @media (max-width:720px){
     .stats{grid-template-columns:repeat(2,1fr)}
     .filters{grid-template-columns:1fr 1fr}
@@ -161,6 +171,7 @@
       <div class="sub" id="todayLbl"></div>
     </div>
     <div class="hbtns">
+      <button id="btnBkTop" title="Back up data">💾 Backup</button>
       <button id="btnLockNow" style="display:none" title="Lock">🔒</button>
       <button class="primary" id="btnNew">+ New case</button>
     </div>
@@ -176,6 +187,12 @@
 <main>
   <!-- ============ CASES ============ -->
   <section class="view on" id="v-cases">
+    <div class="panel" id="bkBanner" style="display:none;border-color:#f3d19c;background:var(--amberbg)">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <span id="bkBannerTxt" style="font-size:14px;color:var(--amber);font-weight:600"></span>
+        <button class="primary small" id="btnBkBanner">Back up now</button>
+      </div>
+    </div>
     <section class="stats">
       <div class="stat" data-f="pending"><div class="n" id="sPending">0</div><div class="l">Pending</div></div>
       <div class="stat over" data-f="overdue"><div class="n" id="sOver">0</div><div class="l">Overdue</div></div>
@@ -307,16 +324,23 @@
       <h2>Export, backup &amp; sync</h2>
       <div class="rowbtns">
         <button id="btnCsv">Export to Excel (CSV)</button>
-        <button id="btnBackup">Backup file</button>
+        <button class="primary" id="btnBackup">Back up data</button>
         <button id="btnRestore">Restore / sync from backup</button>
-        <input type="file" id="fileRestore" accept=".json,application/json" hidden>
+        <input type="file" id="fileRestore" accept=".json,.txt,application/json,text/plain" hidden>
       </div>
-      <div class="note"><b>Keeping phone and PC in step:</b> take a Backup on one device, open it with "Restore / sync" on the other. Cases are merged — the most recently edited copy of each case wins, and deletions carry across — so nothing is duplicated. Do the same in the other direction to bring both up to date.</div>
+      <div class="hint" id="bkLast" style="margin-top:8px"></div>
+      <div style="margin-top:8px;max-width:320px"><label>Remind me to back up</label>
+        <select id="bkEvery"><option value="7">Every 7 days</option><option value="15">Every 15 days</option><option value="30">Every 30 days</option><option value="0">Never</option></select></div>
+      <div class="note"><b>Where to keep it:</b> choose "Share" when backing up and pick Google Drive, Gmail or WhatsApp (to yourself) so a copy is safe even if the phone is lost. Protect it with a password.<br><b>Keeping phone and PC in step:</b> take a Backup on one device, open it with "Restore / sync" on the other. Cases are merged — the most recently edited copy of each case wins, and deletions carry across — so nothing is duplicated. Do the same in the other direction to bring both up to date.</div>
     </div>
     <div class="panel">
       <h2>Security</h2>
       <div id="pinBox"></div>
       <div class="note">With a PIN set, all saved cases are encrypted on this device (AES-256) and the app locks itself after the idle time chosen. <b>If you forget the PIN the data cannot be recovered</b> — keep a backup.</div>
+    </div>
+    <div class="panel">
+      <h2>Attachments storage</h2>
+      <div id="attInfo" class="hint">—</div>
     </div>
     <div class="panel">
       <h2>Office holidays</h2>
@@ -432,6 +456,20 @@
         <div class="sec" id="secCl">Checklist</div>
         <div class="full checks" id="checks"></div>
 
+        <div class="sec">Attachments</div>
+        <div class="full">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <select id="attLabel" style="flex:1;min-width:150px">
+              <option>Reply received</option><option>Notice issued</option><option>Order issued</option>
+              <option>Documents submitted</option><option>Site visit photo</option><option>Payment proof (DRC-03)</option><option>Other</option>
+            </select>
+            <button type="button" id="btnAttAdd">+ Add image / PDF</button>
+            <input type="file" id="attFile" accept="image/*,application/pdf" multiple hidden>
+          </div>
+          <div class="hint" id="attHint">Photos are reduced in size automatically. Files stay on this device only.</div>
+          <div class="att" id="attList"></div>
+        </div>
+
         <div class="sec">Notes</div>
         <div class="full">
           <label for="cRemarks">Remarks / next action</label>
@@ -480,6 +518,7 @@
     <div class="hint" id="pwMsg" style="margin-bottom:8px"></div>
     <input id="pwIn" type="password" autocomplete="new-password">
     <div class="hint warn" id="pwErr"></div>
+    <div id="pwExtra" style="margin-top:10px"></div>
   </div>
   <div class="df"><button type="button" id="btnPwAlt"></button><button class="primary" id="btnPwOk">OK</button></div>
 </dialog>
@@ -488,6 +527,12 @@
 <dialog id="dlgCf" style="width:min(420px,96vw)">
   <div class="db" id="cfMsg" style="padding-top:20px"></div>
   <div class="df"><button type="button" id="btnCfNo">Cancel</button><button class="primary" id="btnCfYes">Confirm</button></div>
+</dialog>
+
+<dialog id="dlgView">
+  <div class="dh"><h3 id="viewTitle" style="font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></h3><button type="button" id="btnViewClose">✕</button></div>
+  <div class="db"><img id="viewImg" alt=""></div>
+  <div class="df"><button type="button" id="btnViewShare">Share</button><button class="primary" type="button" id="btnViewDl">Download</button></div>
 </dialog>
 
 <div id="tip"></div>
@@ -803,7 +848,7 @@ $("lnkForgot").onclick = function(e){
   $("lock").style.display = "none";
   confirmBox("<b>Erase all data and remove the PIN?</b><br><br>Without the PIN the saved cases cannot be decrypted. After erasing, you can restore from a backup file.", "Erase everything", function(){
     try { localStorage.removeItem(KEY); } catch(err){}
-    db = normalise(null); pinKey = null; start(); toast("Data erased");
+    clearFiles(); db = normalise(null); pinKey = null; start(); toast("Data erased");
   });
   $("btnCfNo").onclick = function(){ $("dlgCf").close(); $("lock").style.display = "flex"; };
 };
@@ -855,7 +900,7 @@ $("tabs").addEventListener("click", function(e){
 });
 function renderAll(){
   if(!db) return;
-  renderStats();
+  renderStats(); renderBackupStatus();
   if(currentView === "cases") renderList();
   if(currentView === "calendar") renderCalendar();
   if(currentView === "reports") renderReports();
@@ -949,6 +994,7 @@ function toggleDisp(){ $("wDisp").style.display = $("cStatus").value === "dispos
 
 function openForm(c, preset){
   editingId = c ? c.id : null;
+  formIsNew = !editingId; formSaved = false; formCaseId = editingId || newId();
   $("dlgTitle").textContent = c ? "Edit case" : "New case";
   $("btnDelete").style.visibility = c ? "visible" : "hidden";
   c = c || Object.assign({type:"SCR", recv:todayIso(), status:"pending", checks:{}}, preset || {});
@@ -963,7 +1009,7 @@ function openForm(c, preset){
   var hist = c.history || [];
   $("wHist").style.display = hist.length ? "" : "none";
   $("hist").innerHTML = hist.slice().reverse().map(function(h){ return fmt(h.on) + " — " + esc(h.text); }).join("<br>");
-  toggleDisp(); gstinHint(); renderMiles();
+  toggleDisp(); gstinHint(); renderMiles(); renderAtt();
   dlg.showModal(); $("dlg").querySelector(".db").scrollTop = 0;
 }
 
@@ -990,11 +1036,11 @@ $("frm").addEventListener("submit", function(e){
     if((old.hear || "") !== c.hear && c.hear) hist.push({on:now, text:"Hearing / visit fixed for " + fmt(c.hear)});
     Object.assign(old, c, {history:hist, updatedAt:Date.now()});
   } else {
-    c.id = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+    c.id = formCaseId;
     c.created = now; c.updatedAt = Date.now(); c.history = [{on:now, text:"Case added — " + c.stage}];
     db.cases.push(c);
   }
-  persist(); dlg.close(); renderAll(); toast("Saved");
+  formSaved = true; persist(); dlg.close(); renderAll(); toast("Saved");
 });
 $("btnDelete").onclick = function(){
   if(!editingId) return;
@@ -1002,6 +1048,7 @@ $("btnDelete").onclick = function(){
   confirmBox("Delete this case permanently?", "Delete", function(){
     db.cases = db.cases.filter(function(x){ return x.id !== id; });
     db.deleted[id] = Date.now();
+    deleteCaseFiles(id);
     persist(); dlg.close(); renderAll(); toast("Case deleted");
   });
 };
@@ -1062,7 +1109,7 @@ function filtered(){
     if(ph && !c.hear) return false;
     if(terms.length){
       var t = TYPES[c.type] || TYPES.OTHER;
-      var hay = [c.gstin,c.name,c.ref,c.period,c.remarks,c.stage,t.label,t.short,c.fy ? "FY " + c.fy : "",c.sec ? "section " + c.sec : ""].join(" ").toLowerCase();
+      var hay = [c.gstin,c.name,c.ref,c.period,c.remarks,c.stage,t.label,t.short,c.fy ? "FY " + c.fy : "",c.sec ? "section " + c.sec : ""].concat((fileMeta[c.id] || []).map(function(m){ return m.name + " " + m.label; })).join(" ").toLowerCase();
       for(var i=0;i<terms.length;i++) if(hay.indexOf(terms[i]) < 0) return false;
     }
     return true;
@@ -1098,6 +1145,7 @@ function caseCard(c){
   meta2.push("Stage: " + esc(c.stage || "—"));
   if(items.length) meta2.push("Checklist " + done + "/" + items.length);
   if(c.hear) meta2.push("<b>Hearing / visit " + fmt(c.hear) + "</b>");
+  var nf = (fileMeta[c.id] || []).length; if(nf) meta2.push("📎 " + nf);
   if(t.amt && num(c.a1)) meta2.push(esc(t.amt[0]) + " " + money(c.a1));
   return '<div class="case ' + st + '" data-id="' + c.id + '">' +
     '<div><div><span class="tag">' + esc(t.short) + '</span><span class="t">' + esc(c.name || "(no name)") + "</span></div>" +
@@ -1369,19 +1417,19 @@ function download(name, text, mime){
 }
 function csvCell(v){ v = v == null ? "" : String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v; }
 $("btnCsv").onclick = function(){
-  var head = ["Case type","GSTIN","Name","ARN/Reference","Period","FY","Section","Stage","Status","First date","Date 2","Date 3","Hearing/visit","Due date","Due for","Basis","Disposed on","Amount 1","Amount 2","Amount 3","Amount labels","Checklist done","Remarks"];
+  var head = ["Case type","GSTIN","Name","ARN/Reference","Period","FY","Section","Stage","Status","First date","Date 2","Date 3","Hearing/visit","Due date","Due for","Basis","Disposed on","Amount 1","Amount 2","Amount 3","Amount labels","Checklist done","Attachments","Remarks"];
   var lines = [head];
   db.cases.forEach(function(c){
     var t = TYPES[c.type] || TYPES.OTHER, a = activeDue(c), items = checklistFor(c.type);
     lines.push([t.label,c.gstin,c.name,c.ref,c.period,c.fy,c.sec,c.stage,c.status === "disposed" ? "Disposed" : "Pending",
       c.recv,c.d1,c.d2,c.hear,a ? a.date : "",a ? a.label : "",a ? a.basis : "",c.disposed,c.a1,c.a2,c.a3,t.amt ? t.amt.join(" / ") : "",
-      items.length ? items.filter(function(it){ return c.checks && c.checks[it]; }).length + "/" + items.length : "",c.remarks]);
+      items.length ? items.filter(function(it){ return c.checks && c.checks[it]; }).length + "/" + items.length : "",(fileMeta[c.id] || []).length,c.remarks]);
   });
   download("gst-cases-" + todayIso() + ".csv", "\uFEFF" + lines.map(function(r){ return r.map(csvCell).join(","); }).join("\r\n"), "text/csv;charset=utf-8");
 };
 
 function askPassword(title, msg, altLabel, cb, altCb){
-  $("pwTitle").textContent = title; $("pwMsg").innerHTML = msg; $("pwIn").value = ""; $("pwErr").textContent = "";
+  $("pwTitle").textContent = title; $("pwMsg").innerHTML = msg; $("pwExtra").innerHTML = ""; $("pwIn").value = ""; $("pwErr").textContent = "";
   $("btnPwAlt").textContent = altLabel || ""; $("btnPwAlt").style.visibility = altLabel ? "visible" : "hidden";
   $("btnPwOk").onclick = function(){ cb($("pwIn").value); };
   $("btnPwAlt").onclick = function(){ $("dlgPw").close(); if(altCb) altCb(); };
@@ -1390,17 +1438,52 @@ function askPassword(title, msg, altLabel, cb, altCb){
 $("btnPwClose").onclick = function(){ $("dlgPw").close(); };
 $("pwIn").addEventListener("keydown", function(e){ if(e.key === "Enter") $("btnPwOk").click(); });
 
-$("btnBackup").onclick = function(){
-  var name = "gst-case-tracker-backup-" + todayIso() + ".json";
-  if(!hasCrypto){ download(name, JSON.stringify(db), "application/json"); return; }
-  askPassword("Backup", "Set a password to protect the backup file (recommended). You will need it to restore.", "Save without password", function(pw){
-    if(pw.length < 4){ $("pwErr").textContent = "Use at least 4 characters"; return; }
-    var salt = crypto.getRandomValues(new Uint8Array(16));
-    deriveKey(pw, salt).then(function(k){ return encryptWith(k, salt, db); }).then(function(e){
-      download(name, JSON.stringify({gstTrackerBackup:2, enc:e}), "application/json"); $("dlgPw").close(); toast("Protected backup saved");
+function canShareFiles(){
+  try { return !!(navigator.share && navigator.canShare && navigator.canShare({files:[new File(["x"], "t.txt", {type:"text/plain"})]})); } catch(e){ return false; }
+}
+function markBackedUp(){ db.settings.lastBackup = Date.now(); persist(); renderBackupStatus(); }
+function deliverBackup(text, how){
+  var base = "gst-case-tracker-backup-" + todayIso();
+  if(how === "share"){
+    var f = new File([text], base + ".txt", {type:"text/plain"});
+    confirmBox("<b>Backup is ready.</b><br><br>Tap Share and choose Google Drive, Gmail or WhatsApp to save it.", "Share", function(){
+      navigator.share({files:[f], title:"GST Case Tracker backup"}).then(function(){ markBackedUp(); toast("Backup shared"); })
+        .catch(function(e){ if(!e || e.name !== "AbortError"){ download(base + ".json", text, "application/json"); markBackedUp(); toast("Sharing failed — backup downloaded instead"); } });
     });
-  }, function(){ download(name, JSON.stringify(Object.assign({gstTrackerBackup:2}, db)), "application/json"); toast("Backup saved"); });
-};
+  } else { download(base + ".json", text, "application/json"); markBackedUp(); toast("Backup saved to Downloads"); }
+}
+function startBackup(){
+  var nf = allMeta().length, sz = allMeta().reduce(function(a,m){ return a + m.size; }, 0), share = canShareFiles();
+  var opt = function(id){ var el = $(id); return el && el.checked; };
+  var build = function(inc){ return (inc ? collectFiles() : Promise.resolve([])).then(function(files){ var o = JSON.parse(JSON.stringify(db)); if(files.length) o.files = files; return o; }); };
+  if(!hasCrypto){ build(nf > 0).then(function(o){ deliverBackup(JSON.stringify(Object.assign({gstTrackerBackup:2}, o)), "download"); }); return; }
+  askPassword("Back up data", db.cases.length + " case(s) will be backed up. Set a password to protect the file (recommended) — you will need it to restore.", "Skip password", function(pw){
+    if(pw.length < 4){ $("pwErr").textContent = "Use at least 4 characters"; return; }
+    var inc = opt("bkFiles"), how = opt("bkShare") ? "share" : "download"; $("pwErr").textContent = "Preparing…";
+    var salt = crypto.getRandomValues(new Uint8Array(16));
+    build(inc).then(function(o){ return deriveKey(pw, salt).then(function(k){ return encryptWith(k, salt, o); }); }).then(function(e){
+      $("dlgPw").close(); deliverBackup(JSON.stringify({gstTrackerBackup:2, enc:e}), how);
+    }).catch(function(){ $("pwErr").textContent = "Backup failed"; });
+  }, function(){ var inc = opt("bkFiles"), how = opt("bkShare") ? "share" : "download";
+    build(inc).then(function(o){ deliverBackup(JSON.stringify(Object.assign({gstTrackerBackup:2}, o)), how); }); });
+  var x = "";
+  if(share) x += '<label style="margin-top:4px">Save to</label><div class="chk"><input type="radio" name="bkTo" id="bkShare" checked><label for="bkShare">Share — Google Drive, Gmail, WhatsApp…</label></div><div class="chk" style="margin-top:4px"><input type="radio" name="bkTo" id="bkDl"><label for="bkDl">Download to this device</label></div>';
+  if(nf) x += '<div class="chk" style="margin-top:10px"><input type="checkbox" id="bkFiles" checked><label for="bkFiles">Include attachments (' + nf + " file" + (nf === 1 ? "" : "s") + ", " + fmtSize(sz) + ")</label></div>";
+  $("pwExtra").innerHTML = x;
+}
+function renderBackupStatus(){
+  if(!db) return;
+  var every = db.settings.bkEvery == null ? 7 : +db.settings.bkEvery, last = db.settings.lastBackup;
+  var days = last ? Math.floor((Date.now() - last) / 86400000) : null;
+  var txt = last ? "Last backup: " + fmt(new Date(last)) + (days === 0 ? " (today)" : " (" + days + " day" + (days === 1 ? "" : "s") + " ago)") : "No backup taken yet on this device.";
+  if($("bkLast")) $("bkLast").textContent = txt;
+  if($("bkEvery")) $("bkEvery").value = String(every);
+  var show = every > 0 && db.cases.length > 0 && (days === null || days >= every);
+  $("bkBanner").style.display = show ? "" : "none";
+  if(show) $("bkBannerTxt").textContent = last ? "⚠ Last backup was " + days + " days ago." : "⚠ Your cases are not backed up yet.";
+}
+$("btnBackup").onclick = $("btnBkTop").onclick = $("btnBkBanner").onclick = function(){ if(db) startBackup(); };
+$("bkEvery").onchange = function(){ db.settings.bkEvery = +this.value; persist(); renderBackupStatus(); };
 $("btnRestore").onclick = function(){ $("fileRestore").click(); };
 $("fileRestore").onchange = function(e){
   var f = e.target.files[0]; if(!f) return;
@@ -1433,8 +1516,11 @@ function mergeIn(data){
   db.cases = db.cases.filter(function(c){ var del = db.deleted[c.id] && db.deleted[c.id] >= c.updatedAt; if(del) removed++; return !del; });
   data.holidays.forEach(function(h){ if(db.holidays.indexOf(h) < 0) db.holidays.push(h); });
   Object.keys(data.checklists).forEach(function(k){ if(!db.checklists[k]) db.checklists[k] = data.checklists[k]; });
-  persist(); renderAll();
-  toast("Sync done — " + added + " added, " + updated + " updated" + (removed ? ", " + removed + " removed" : ""));
+  persist();
+  importFiles(data.files || []).then(function(nf){
+    renderAll();
+    toast("Sync done — " + added + " added, " + updated + " updated" + (removed ? ", " + removed + " removed" : "") + (nf ? ", " + nf + " attachment(s)" : ""));
+  });
 }
 
 /* ---------- import ---------- */
@@ -1592,6 +1678,7 @@ $("btnImpGo").onclick = function(){
    ===================================================================== */
 function renderSettings(){
   $("hol").value = db.holidays.slice().sort().join("\n");
+  renderAttInfo();
   showChecklistEditor();
   var box = $("pinBox");
   if(!hasCrypto){ box.innerHTML = '<div class="hint warn">PIN lock needs a secure (https) page. It will work once the app is on GitHub Pages.</div>'; return; }
@@ -1602,7 +1689,7 @@ function renderSettings(){
     $("btnPinChange").onclick = function(){ setPinFlow(true); };
     $("btnPinOff").onclick = function(){
       askPassword("Remove PIN", "Enter your current PIN. Data will then be stored without encryption.", null, function(pw){
-        verifyPin(pw).then(function(ok){ if(!ok){ $("pwErr").textContent = "Wrong PIN"; return; } pinKey = null; pinSalt = null; persist(); $("dlgPw").close(); start(); toast("PIN removed"); });
+        verifyPin(pw).then(function(ok){ if(!ok){ $("pwErr").textContent = "Wrong PIN"; return; } $("pwErr").textContent = "Working…"; reencryptAll(pinKey, null).then(function(){ pinKey = null; pinSalt = null; persist(); $("dlgPw").close(); start(); toast("PIN removed"); }); });
       });
     };
     $("btnLock2").onclick = showLock;
@@ -1624,7 +1711,8 @@ function setPinFlow(change){
       askPassword("Confirm PIN", "Enter the same PIN again.", null, function(p2){
         if(p2 !== p1){ $("pwErr").textContent = "PINs don't match"; return; }
         var salt = crypto.getRandomValues(new Uint8Array(16));
-        deriveKey(p1, salt).then(function(k){ pinKey = k; pinSalt = salt; persist(); return saveChain; }).then(function(){ $("dlgPw").close(); start(); toast("PIN set — data is now encrypted"); });
+        $("pwErr").textContent = "Working…";
+        deriveKey(p1, salt).then(function(k){ return reencryptAll(pinKey, k).then(function(){ pinKey = k; pinSalt = salt; persist(); return saveChain; }); }).then(function(){ $("dlgPw").close(); start(); toast("PIN set — data is now encrypted"); });
       });
     });
   };
@@ -1645,11 +1733,213 @@ $("btnClReset").onclick = function(){ delete db.checklists[$("clType").value]; p
 $("btnErase").onclick = function(){
   confirmBox("<b>Erase all cases, holidays and settings on this device?</b><br><br>This cannot be undone. Take a backup first if you may need the data.", "Erase everything", function(){
     try { localStorage.removeItem(KEY); } catch(e){}
-    db = normalise(null); pinKey = null; pinSalt = null; start(); toast("All data erased");
+    clearFiles(); db = normalise(null); pinKey = null; pinSalt = null; start(); toast("All data erased");
   });
 };
 
-boot();
+/* =====================================================================
+   ATTACHMENTS (IndexedDB; encrypted with the PIN key when a PIN is set)
+   ===================================================================== */
+var IDB = null, fileMeta = {}, formCaseId = null, formIsNew = false, formSaved = false, attUrls = [], viewing = null;
+var MAX_FILE = 25 * 1024 * 1024;
+function newId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function fmtSize(b){ return b < 1024 ? b + " B" : b < 1048576 ? (b/1024).toFixed(0) + " KB" : (b/1048576).toFixed(1) + " MB"; }
+function allMeta(){ var out = []; Object.keys(fileMeta).forEach(function(k){ out = out.concat(fileMeta[k]); }); return out; }
+function idbInit(){
+  return new Promise(function(res){
+    if(!window.indexedDB) return res();
+    try {
+      var r = indexedDB.open("gstCaseTrackerFiles", 1);
+      r.onupgradeneeded = function(){ var d = r.result;
+        if(!d.objectStoreNames.contains("meta")) d.createObjectStore("meta", {keyPath:"id"});
+        if(!d.objectStoreNames.contains("blobs")) d.createObjectStore("blobs", {keyPath:"id"}); };
+      r.onsuccess = function(){ IDB = r.result; loadMeta().then(res, res); };
+      r.onerror = function(){ res(); };
+    } catch(e){ res(); }
+  });
+}
+function idbDo(stores, mode, fn){
+  return new Promise(function(res, rej){
+    var t = IDB.transaction(stores, mode), out = fn(t);
+    t.oncomplete = function(){ res(out && typeof out === "object" && "readyState" in out ? out.result : out); };
+    t.onerror = t.onabort = function(){ rej(t.error); };
+  });
+}
+function loadMeta(){
+  return idbDo("meta", "readonly", function(t){ return t.objectStore("meta").getAll(); }).then(function(list){
+    fileMeta = {}; (list || []).forEach(function(m){ (fileMeta[m.caseId] = fileMeta[m.caseId] || []).push(m); });
+  });
+}
+function encWith(key, buf){
+  if(!key) return Promise.resolve({enc:false, data:buf});
+  var iv = crypto.getRandomValues(new Uint8Array(12));
+  return crypto.subtle.encrypt({name:"AES-GCM", iv:iv}, key, buf).then(function(ct){ return {enc:true, iv:b64(iv), data:ct}; });
+}
+function decWith(key, rec){
+  if(!rec) return Promise.reject(new Error("missing"));
+  if(!rec.enc) return Promise.resolve(rec.data);
+  if(!key) return Promise.reject(new Error("locked"));
+  return crypto.subtle.decrypt({name:"AES-GCM", iv:unb64(rec.iv)}, key, rec.data);
+}
+function prepareFile(file){
+  var isImg = /^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type);
+  if(!isImg || file.size < 400 * 1024) return file.arrayBuffer().then(function(buf){ return {buf:buf, type:file.type || "application/octet-stream", name:file.name}; });
+  return new Promise(function(res){
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function(){
+      var sc = Math.min(1, 1600 / Math.max(img.width, img.height)), cv = document.createElement("canvas");
+      cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+      cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); URL.revokeObjectURL(url);
+      cv.toBlob(function(b){
+        if(!b || b.size >= file.size) file.arrayBuffer().then(function(buf){ res({buf:buf, type:file.type, name:file.name}); });
+        else b.arrayBuffer().then(function(buf){ res({buf:buf, type:"image/jpeg", name:file.name.replace(/\.\w+$/, "") + ".jpg"}); });
+      }, "image/jpeg", 0.82);
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); file.arrayBuffer().then(function(buf){ res({buf:buf, type:file.type, name:file.name}); }); };
+    img.src = url;
+  });
+}
+function storeFile(caseId, label, p, id, added){
+  var meta = {id:id || newId(), caseId:caseId, name:p.name, type:p.type, size:p.buf.byteLength, label:label, added:added || todayIso(), addedAt:Date.now()};
+  return encWith(pinKey, p.buf).then(function(rec){
+    rec.id = meta.id;
+    return idbDo(["meta","blobs"], "readwrite", function(t){ t.objectStore("meta").put(meta); t.objectStore("blobs").put(rec); });
+  }).then(function(){ (fileMeta[caseId] = fileMeta[caseId] || []).push(meta); return meta; });
+}
+function addFiles(files){
+  if(!IDB){ toast("Attachments aren't supported in this browser"); return; }
+  var label = $("attLabel").value, list = Array.prototype.slice.call(files), n = 0;
+  if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function(){});
+  $("attHint").textContent = "Saving…";
+  var chain = Promise.resolve();
+  list.forEach(function(f){
+    chain = chain.then(function(){
+      if(f.size > MAX_FILE){ toast(f.name + " is over 25 MB — skipped"); return; }
+      if(!/^image\/|application\/pdf/.test(f.type) && !/\.pdf$/i.test(f.name)){ toast(f.name + " is not an image or PDF — skipped"); return; }
+      return prepareFile(f).then(function(p){ if(/\.pdf$/i.test(p.name)) p.type = "application/pdf"; return storeFile(formCaseId, label, p); }).then(function(){ n++; });
+    });
+  });
+  chain.then(function(){
+    $("attHint").textContent = "Photos are reduced in size automatically. Files stay on this device only.";
+    if(n && !formIsNew){
+      var c = db.cases.find(function(x){ return x.id === formCaseId; });
+      if(c){ (c.history = c.history || []).push({on:todayIso(), text:"Attachment added — " + label + (n > 1 ? " (" + n + " files)" : "")}); c.updatedAt = Date.now(); persist(); }
+    }
+    renderAtt(); renderAll();
+  }).catch(function(){ $("attHint").textContent = "Could not save the file — device storage may be full."; });
+}
+function getBlob(m){
+  return idbDo("blobs", "readonly", function(t){ return t.objectStore("blobs").get(m.id); })
+    .then(function(rec){ return decWith(pinKey, rec); })
+    .then(function(buf){ return new Blob([buf], {type:m.type}); });
+}
+function deleteFile(m){
+  return idbDo(["meta","blobs"], "readwrite", function(t){ t.objectStore("meta").delete(m.id); t.objectStore("blobs").delete(m.id); })
+    .then(function(){ fileMeta[m.caseId] = (fileMeta[m.caseId] || []).filter(function(x){ return x.id !== m.id; }); if(!fileMeta[m.caseId].length) delete fileMeta[m.caseId]; });
+}
+function deleteCaseFiles(caseId){
+  var list = (fileMeta[caseId] || []).slice(), p = Promise.resolve();
+  list.forEach(function(m){ p = p.then(function(){ return deleteFile(m); }); });
+  return p.catch(function(){});
+}
+function clearFiles(){
+  fileMeta = {};
+  if(IDB) idbDo(["meta","blobs"], "readwrite", function(t){ t.objectStore("meta").clear(); t.objectStore("blobs").clear(); }).catch(function(){});
+}
+function reencryptAll(oldKey, newKey){
+  if(!IDB) return Promise.resolve();
+  return idbDo("blobs", "readonly", function(t){ return t.objectStore("blobs").getAll(); }).then(function(recs){
+    var p = Promise.resolve();
+    (recs || []).forEach(function(rec){
+      p = p.then(function(){ return decWith(oldKey, rec).then(function(buf){ return encWith(newKey, buf); }).then(function(nr){
+        nr.id = rec.id; return idbDo("blobs", "readwrite", function(t){ t.objectStore("blobs").put(nr); }); }); });
+    });
+    return p;
+  });
+}
+function b64big(buf){ var b = new Uint8Array(buf), s = ""; for(var i=0;i<b.length;i+=0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i+0x8000)); return btoa(s); }
+function collectFiles(){
+  var out = [], p = Promise.resolve();
+  allMeta().forEach(function(m){
+    p = p.then(function(){ return getBlob(m).then(function(bl){ return bl.arrayBuffer(); }).then(function(buf){ out.push(Object.assign({}, m, {data:b64big(buf)})); }).catch(function(){}); });
+  });
+  return p.then(function(){ return out; });
+}
+function importFiles(files){
+  if(!IDB || !files.length) return Promise.resolve(0);
+  var have = {}, n = 0, p = Promise.resolve();
+  allMeta().forEach(function(m){ have[m.id] = true; });
+  files.forEach(function(f){
+    if(!f || !f.id || have[f.id] || !f.data) return;
+    if(!db.cases.some(function(c){ return c.id === f.caseId; })) return;
+    p = p.then(function(){ return storeFile(f.caseId, f.label || "Other", {buf:unb64(f.data).buffer, type:f.type, name:f.name}, f.id, f.added).then(function(){ n++; }); }).catch(function(){});
+  });
+  return p.then(function(){ return n; });
+}
+function renderAtt(){
+  attUrls.forEach(function(u){ URL.revokeObjectURL(u); }); attUrls = [];
+  var list = (fileMeta[formCaseId] || []).slice().sort(function(a,b){ return a.addedAt - b.addedAt; }), box = $("attList");
+  if(!IDB){ box.innerHTML = '<div class="hint warn">This browser does not allow saving files.</div>'; $("btnAttAdd").disabled = true; return; }
+  box.innerHTML = list.length ? list.map(function(m){
+    var pdf = m.type === "application/pdf";
+    return '<div class="att-it" data-id="' + m.id + '"><div class="th' + (pdf ? " pdf" : "") + '" data-act="view">' + (pdf ? "PDF" : "IMG") + "</div>" +
+      '<div class="ai" data-act="view"><b>' + esc(m.name) + '</b><div class="hint">' + esc(m.label) + " · " + fmt(m.added) + " · " + fmtSize(m.size) + "</div></div>" +
+      '<div class="ab">' + (navigator.share ? '<button type="button" data-act="share" title="Share">⤴</button>' : "") + '<button type="button" data-act="del" class="danger" title="Delete">✕</button></div></div>';
+  }).join("") : "";
+  list.forEach(function(m){
+    if(!/^image\//.test(m.type)) return;
+    getBlob(m).then(function(bl){ var u = URL.createObjectURL(bl); attUrls.push(u);
+      var th = box.querySelector('.att-it[data-id="' + m.id + '"] .th'); if(th) th.innerHTML = '<img src="' + u + '" alt="">'; }).catch(function(){});
+  });
+}
+function findMeta(id){ return allMeta().find(function(m){ return m.id === id; }); }
+function shareFile(m){
+  return getBlob(m).then(function(bl){
+    var f = new File([bl], m.name, {type:m.type});
+    if(navigator.canShare && !navigator.canShare({files:[f]})) throw new Error("noshare");
+    return navigator.share({files:[f], title:m.name});
+  }).catch(function(e){ if(e && e.name !== "AbortError") toast("Sharing isn't available — use Download instead"); });
+}
+function downloadFile(m){
+  getBlob(m).then(function(bl){ var u = URL.createObjectURL(bl), a = document.createElement("a"); a.href = u; a.download = m.name; document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); }, 1500); toast("Downloaded " + m.name); });
+}
+function viewFile(m){
+  if(m.type === "application/pdf"){
+    if(/Android/i.test(navigator.userAgent)){ downloadFile(m); return; }
+    var w = window.open("", "_blank");
+    getBlob(m).then(function(bl){ var u = URL.createObjectURL(bl); if(w) w.location = u; else downloadFile(m); });
+    return;
+  }
+  viewing = m; $("viewTitle").textContent = m.label + " — " + m.name; $("btnViewShare").style.display = navigator.share ? "" : "none";
+  getBlob(m).then(function(bl){ var u = URL.createObjectURL(bl); attUrls.push(u); $("viewImg").src = u; $("dlgView").showModal(); })
+    .catch(function(){ toast("Couldn't open the file"); });
+}
+$("btnAttAdd").onclick = function(){ $("attFile").click(); };
+$("attFile").onchange = function(e){ var fs = e.target.files; if(fs && fs.length) addFiles(fs); e.target.value = ""; };
+$("attList").addEventListener("click", function(e){
+  var b = e.target.closest("[data-act]"), it = e.target.closest(".att-it"); if(!b || !it) return;
+  var m = findMeta(it.dataset.id); if(!m) return;
+  if(b.dataset.act === "view") viewFile(m);
+  else if(b.dataset.act === "share") shareFile(m);
+  else if(b.dataset.act === "del") confirmBox("Delete <b>" + esc(m.name) + "</b>?", "Delete", function(){ deleteFile(m).then(function(){ renderAtt(); renderAll(); }); });
+});
+$("btnViewClose").onclick = function(){ $("dlgView").close(); };
+$("btnViewDl").onclick = function(){ if(viewing) downloadFile(viewing); };
+$("btnViewShare").onclick = function(){ if(viewing) shareFile(viewing); };
+dlg.addEventListener("close", function(){ if(formIsNew && !formSaved && formCaseId) deleteCaseFiles(formCaseId); });
+function renderAttInfo(){
+  var box = $("attInfo"); if(!box) return;
+  if(!IDB){ box.innerHTML = '<span class="warn">This browser does not allow saving attachments.</span>'; return; }
+  var ms = allMeta(), sz = ms.reduce(function(a,m){ return a + m.size; }, 0);
+  var txt = ms.length + " file" + (ms.length === 1 ? "" : "s") + " · " + fmtSize(sz) + (pinKey ? " · encrypted with your PIN" : "");
+  box.textContent = txt;
+  if(navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(function(e){
+    box.textContent = txt + " · space free on device for this app: about " + fmtSize(Math.max(0, (e.quota || 0) - (e.usage || 0)));
+  });
+}
+
+idbInit().then(boot);
 if("serviceWorker" in navigator && location.protocol === "https:"){ navigator.serviceWorker.register("sw.js").catch(function(){}); }
 })();
 </script>
