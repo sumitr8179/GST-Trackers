@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GST Case Tracker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1f4e79">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
   :root{
     --bg:#f5f6f8; --card:#fff; --ink:#1d2330; --muted:#667085; --line:#e4e7ec;
@@ -1646,6 +1650,7 @@ $("btnErase").onclick = function(){
 };
 
 boot();
+if("serviceWorker" in navigator && location.protocol === "https:"){ navigator.serviceWorker.register("sw.js").catch(function(){}); }
 })();
 </script>
 </body>
