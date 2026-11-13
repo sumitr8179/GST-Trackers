@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GST Case Tracker</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#fff; --ink:#1d2330; --muted:#667085; --line:#e4e7ec;
+    --brand:#1f4e79; --brand2:#2f6fa8; --red:#c62828; --redbg:#fdecea;
+    --amber:#b26a00; --amberbg:#fff4e0; --green:#2e7d32; --greenbg:#e8f5e9;
+    --series-1:#2a78d6; --series-2:#eb6834;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+  header{background:var(--brand);color:#fff;padding:12px 18px 0}
+  .htop{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;max-width:1100px;margin:0 auto}
+  header h1{font-size:18px;margin:0;font-weight:600}
+  header .sub{font-size:12px;opacity:.8}
+  .hbtns{display:flex;gap:6px}
+  button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:7px 12px}
+  button.primary{background:var(--brand2);border-color:var(--brand2);color:#fff}
+  button.small{padding:4px 10px;font-size:13px}
+  button.danger{color:var(--red);border-color:#f2c4c0}
+  button:disabled{opacity:.5;cursor:default}
+  header button{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3);color:#fff}
+  header button.primary{background:#fff;color:var(--brand);border-color:#fff;font-weight:600}
+  nav.tabs{display:flex;gap:2px;max-width:1100px;margin:10px auto 0;overflow-x:auto}
+  nav.tabs button{background:transparent;border:none;border-radius:8px 8px 0 0;color:rgba(255,255,255,.8);padding:9px 14px;white-space:nowrap}
+  nav.tabs button.on{background:var(--bg);color:var(--brand);font-weight:600}
+  main{max-width:1100px;margin:0 auto;padding:16px}
+  .view{display:none} .view.on{display:block}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer}
+  .stat .n{font-size:26px;font-weight:700}
+  .stat .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .stat.over .n{color:var(--red)} .stat.soon .n{color:var(--amber)} .stat.done .n{color:var(--green)}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px}
+  .panel h2{font-size:13px;margin:0 0 10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .bytype{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px;cursor:pointer;background:#fafbfc}
+  .chip b{margin-left:4px}
+  .searchbar{display:flex;gap:8px;margin-bottom:8px}
+  .searchbar input{flex:1;font-size:16px;padding:10px 12px}
+  .filters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+  .adv{display:none;grid-template-columns:repeat(4,1fr);gap:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px}
+  .adv.on{display:grid}
+  .rescount{font-size:13px;color:var(--muted);margin:6px 2px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  input,select,textarea{font:inherit;width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+  textarea{min-height:70px;resize:vertical}
+  .list{display:flex;flex-direction:column;gap:8px}
+  .case{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:10px;padding:10px 14px;display:grid;grid-template-columns:1fr auto;gap:6px;cursor:pointer}
+  .case.over{border-left-color:var(--red)} .case.soon{border-left-color:var(--amber)} .case.ok{border-left-color:var(--brand2)} .case.disp{border-left-color:var(--green);opacity:.85}
+  .case .t{font-weight:600}
+  .case .m{font-size:13px;color:var(--muted)}
+  a.gst{color:var(--brand2);text-decoration:underline;cursor:pointer}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:#eef3f9;color:var(--brand);margin-right:6px;font-weight:600}
+  .due{text-align:right;font-size:13px;white-space:nowrap}
+  .due .d{font-weight:700;font-size:14px}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-top:2px}
+  .b-over{background:var(--redbg);color:var(--red)} .b-soon{background:var(--amberbg);color:var(--amber)} .b-ok{background:#eef3f9;color:var(--brand)} .b-disp{background:var(--greenbg);color:var(--green)}
+  .empty{text-align:center;color:var(--muted);padding:30px}
+  dialog{border:none;border-radius:14px;padding:0;width:min(760px,96vw);max-height:92vh}
+  dialog::backdrop{background:rgba(16,24,40,.45)}
+  .dh{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:2}
+  .dh h3{margin:0;font-size:17px}
+  .db{padding:14px 18px}
+  .df{padding:12px 18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;position:sticky;bottom:0;background:#fff;z-index:2}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 12px}
+  .full{grid-column:1/-1}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px;font-weight:600}
+  .hint{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.45}
+  .warn{color:var(--red)}
+  .sec{grid-column:1/-1;font-size:12px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.5px;margin-top:6px;border-top:1px solid var(--line);padding-top:10px}
+  .miles{border:1px dashed var(--line);border-radius:10px;padding:10px 12px;background:#fafbfc}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  .miles td{padding:5px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+  .miles tr:last-child td{border-bottom:none}
+  .basis{color:var(--muted);font-style:italic}
+  .chk{display:flex;align-items:center;gap:8px}
+  .chk input{width:auto;margin:0}
+  .chk label{margin:0;font-weight:500;color:var(--ink);font-size:14px}
+  .checks{display:flex;flex-direction:column;gap:6px}
+  .note{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5}
+  .banner{background:var(--redbg);color:var(--red);padding:8px 14px;font-size:13px;display:none}
+  .hist{font-size:12px;color:var(--muted);max-height:120px;overflow:auto}
+  .rtable th,.rtable td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  .rtable th:first-child,.rtable td:first-child{text-align:left;white-space:normal}
+  .rtable th{font-size:12px;color:var(--muted);font-weight:600;background:#fafbfc}
+  .rtable tr.tot td{font-weight:700;border-top:2px solid var(--line)}
+  .scroll{overflow-x:auto}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+  .chart svg{width:100%;height:auto;display:block;overflow:visible}
+  .chart text{font-size:11px;fill:var(--muted)}
+  .chart .val{fill:var(--ink);font-weight:600}
+  #tip{position:fixed;pointer-events:none;background:#1d2330;color:#fff;font-size:12px;padding:6px 9px;border-radius:6px;display:none;z-index:50;line-height:1.4}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cal .h{font-size:11px;color:var(--muted);text-align:center;font-weight:600;padding:4px 0}
+  .cal .c{background:var(--card);border:1px solid var(--line);border-radius:8px;min-height:62px;padding:4px;font-size:12px;cursor:pointer;overflow:hidden}
+  .cal .c.out{opacity:.4}
+  .cal .c.today{border-color:var(--brand2);box-shadow:inset 0 0 0 1px var(--brand2)}
+  .cal .c.sel{background:#eef3f9}
+  .cal .dn{font-weight:600}
+  .cal .ev{font-size:10px;border-radius:4px;padding:1px 4px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ev.due{background:#eef3f9;color:var(--brand)} .ev.over{background:var(--redbg);color:var(--red)} .ev.ph{background:var(--amberbg);color:var(--amber)}
+  .calnav{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px}
+  .calnav b{font-size:16px}
+  .daylist .it{padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer;font-size:14px}
+  .daylist .it:last-child{border-bottom:none}
+  .rowbtns{display:flex;gap:8px;flex-wrap:wrap}
+  .maprow{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;align-items:center;margin-bottom:6px}
+  .maprow label{margin:0}
+  #lock{position:fixed;inset:0;background:var(--brand);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+  #lock .box{background:#fff;border-radius:16px;padding:24px;width:min(360px,100%);text-align:center}
+  #lock input{text-align:center;font-size:22px;letter-spacing:6px;margin:12px 0}
+  #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#1d2330;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;display:none;z-index:120;max-width:90vw}
+  @media (max-width:720px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .filters{grid-template-columns:1fr 1fr}
+    .filters select:first-child{grid-column:1/-1}
+    .adv{grid-template-columns:1fr 1fr}
+    .grid,.grid3,.two{grid-template-columns:1fr}
+    .case{grid-template-columns:1fr}
+    .due{text-align:left}
+    .cal .c{min-height:48px;padding:3px}
+    .cal .ev{font-size:0;height:6px;padding:0}
+  }
+  @media print{
+    header,.noprint,#toast{display:none!important}
+    body{background:#fff}
+    .panel{border:none;padding:0}
+    main{padding:0}
+  }
+</style>
+</head>
+<body>
+<div class="banner" id="storeWarn">Browser storage is unavailable here — entries will be lost when this page is closed. Use Backup regularly.</div>
+
+<div id="lock">
+  <div class="box">
+    <h2 style="margin:0 0 4px;font-size:20px">GST Case Tracker</h2>
+    <div class="hint">Enter your PIN to unlock</div>
+    <input id="lockPin" type="password" inputmode="numeric" autocomplete="off">
+    <div class="hint warn" id="lockErr"></div>
+    <button class="primary" id="btnUnlock" style="width:100%;margin-top:8px">Unlock</button>
+    <div class="hint" style="margin-top:16px"><a href="#" id="lnkForgot" style="color:var(--muted)">Forgot PIN?</a></div>
+  </div>
+</div>
+
+<header>
+  <div class="htop">
+    <div>
+      <h1>GST Case Tracker</h1>
+      <div class="sub" id="todayLbl"></div>
+    </div>
+    <div class="hbtns">
+      <button id="btnLockNow" style="display:none" title="Lock">🔒</button>
+      <button class="primary" id="btnNew">+ New case</button>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button data-v="cases" class="on">Cases</button>
+    <button data-v="calendar">Calendar</button>
+    <button data-v="reports">Reports</button>
+    <button data-v="data">Settings</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ============ CASES ============ -->
+  <section class="view on" id="v-cases">
+    <section class="stats">
+      <div class="stat" data-f="pending"><div class="n" id="sPending">0</div><div class="l">Pending</div></div>
+      <div class="stat over" data-f="overdue"><div class="n" id="sOver">0</div><div class="l">Overdue</div></div>
+      <div class="stat soon" data-f="soon"><div class="n" id="sSoon">0</div><div class="l">Due in 7 days</div></div>
+      <div class="stat done" data-f="dispmonth"><div class="n" id="sDisp">0</div><div class="l">Disposed this month</div></div>
+    </section>
+    <section class="panel">
+      <h2>Pending by case type</h2>
+      <div class="bytype" id="byType"></div>
+    </section>
+
+    <div class="searchbar">
+      <input id="fQ" type="search" placeholder="Search GSTIN, name, ARN / DIN, remarks, stage…" autocomplete="off">
+      <button id="btnAdv">Filters ▾</button>
+    </div>
+    <div class="filters">
+      <select id="fType"><option value="">All case types</option></select>
+      <select id="fStatus">
+        <option value="pending">Pending</option>
+        <option value="disposed">Disposed</option>
+        <option value="">All statuses</option>
+      </select>
+      <select id="fDue">
+        <option value="">Any due date</option>
+        <option value="overdue">Overdue</option>
+        <option value="soon">Due in 7 days</option>
+        <option value="dispmonth">Disposed this month</option>
+        <option value="interest">Refunds past 60 days</option>
+      </select>
+    </div>
+    <div class="adv" id="adv">
+      <div><label>Stage</label><select id="fStage"><option value="">Any stage</option></select></div>
+      <div><label>Financial year</label><select id="fFy"><option value="">Any FY</option></select></div>
+      <div><label>Received from</label><input type="date" id="fRf"></div>
+      <div><label>Received to</label><input type="date" id="fRt"></div>
+      <div><label>Due from</label><input type="date" id="fDf"></div>
+      <div><label>Due to</label><input type="date" id="fDt"></div>
+      <div><label>Amount ≥ (₹)</label><input type="number" id="fAmin" min="0"></div>
+      <div><label>Amount ≤ (₹)</label><input type="number" id="fAmax" min="0"></div>
+      <div class="chk" style="grid-column:span 2"><input type="checkbox" id="fPh"><label for="fPh">Hearing / visit scheduled</label></div>
+      <div><label>Sort by</label>
+        <select id="fSort">
+          <option value="due">Due date</option>
+          <option value="recv">Received (newest)</option>
+          <option value="recvOld">Received (oldest)</option>
+          <option value="amt">Amount (highest)</option>
+          <option value="name">Name (A–Z)</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:flex-end"><button id="btnClear" style="width:100%">Clear filters</button></div>
+    </div>
+    <div class="rescount"><span id="resCount"></span></div>
+    <section class="list" id="list"></section>
+  </section>
+
+  <!-- ============ CALENDAR ============ -->
+  <section class="view" id="v-calendar">
+    <div class="panel">
+      <div class="calnav">
+        <button id="calPrev">‹</button><b id="calTitle"></b><button id="calNext">›</button>
+      </div>
+      <div class="cal" id="cal"></div>
+      <div class="legend" style="margin-top:10px">
+        <span><i style="background:#eef3f9;border:1px solid var(--brand)"></i>Due date</span>
+        <span><i style="background:var(--redbg);border:1px solid var(--red)"></i>Overdue</span>
+        <span><i style="background:var(--amberbg);border:1px solid var(--amber)"></i>Hearing / visit</span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 id="dayTitle">Select a day</h2>
+      <div class="daylist" id="dayList"></div>
+    </div>
+    <div class="panel noprint">
+      <h2>Add to phone calendar</h2>
+      <div class="chk" style="margin-bottom:8px"><input type="checkbox" id="icsNames"><label for="icsNames">Include taxpayer name &amp; GSTIN in calendar entries</label></div>
+      <button class="primary" id="btnIcs">Download calendar file (.ics)</button>
+      <div class="note">Open the downloaded file on your phone to add all pending due dates and hearings, each with a reminder one day before. Calendar apps usually sync to the cloud, so names and GSTINs are left out unless you tick the box above. Re-download after adding new cases.</div>
+    </div>
+  </section>
+
+  <!-- ============ REPORTS ============ -->
+  <section class="view" id="v-reports">
+    <div class="panel noprint">
+      <div class="rowbtns" style="align-items:flex-end">
+        <div style="flex:1;min-width:160px"><label>Report month</label><input type="month" id="rMonth"></div>
+        <button class="primary" id="btnPrint">Print / save as PDF</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 id="mprTitle">Monthly progress</h2>
+      <div class="scroll"><table class="rtable" id="mpr"></table></div>
+      <div class="note">Opening = pending at the start of the month · Closing = Opening + Received − Disposed. Based on the date received and the date of disposal entered for each case.</div>
+    </div>
+    <div class="two">
+      <div class="panel chart">
+        <h2>Received vs disposed — last 6 months</h2>
+        <div class="legend"><span><i style="background:var(--series-1)"></i>Received</span><span><i style="background:var(--series-2)"></i>Disposed</span></div>
+        <div id="chartMonths"></div>
+      </div>
+      <div class="panel chart">
+        <h2>Pending by case type</h2>
+        <div id="chartTypes"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Ageing of pending cases (days since received, as on today)</h2>
+      <div class="scroll"><table class="rtable" id="ageing"></table></div>
+    </div>
+    <div class="panel">
+      <h2 id="amtTitle">Amounts</h2>
+      <div class="scroll"><table class="rtable" id="amts"></table></div>
+      <div class="note" id="amtNote"></div>
+    </div>
+    <div class="panel">
+      <h2><span>Refunds — interest exposure under <i>Section 56</i></span></h2>
+      <div class="scroll"><table class="rtable" id="intTable"></table></div>
+      <div class="note">Estimate at 6% p.a. (Notification No. 13/2017-Central Tax dated 28.06.2017) from the day after 60 days from receipt of the application till the date of refund (or today, if not yet refunded), on the sanctioned amount (or claimed amount if not yet sanctioned). Exclusions under Rule 94 — such as delay attributable to the applicant — are not applied. Verify before relying on it.</div>
+    </div>
+  </section>
+
+  <!-- ============ DATA & SETTINGS ============ -->
+  <section class="view" id="v-data">
+    <div class="panel">
+      <h2>Import cases from Excel / CSV</h2>
+      <input type="file" id="impFile" accept=".csv,.txt,.xlsx,.xls">
+      <div class="note">Use a case list downloaded from the BO portal or your own register. The first row must be the column headings. You will match the columns before anything is imported. Excel files need an internet connection the first time (to load the reader); CSV always works offline.</div>
+    </div>
+    <div class="panel">
+      <h2>Export, backup &amp; sync</h2>
+      <div class="rowbtns">
+        <button id="btnCsv">Export to Excel (CSV)</button>
+        <button id="btnBackup">Backup file</button>
+        <button id="btnRestore">Restore / sync from backup</button>
+        <input type="file" id="fileRestore" accept=".json,application/json" hidden>
+      </div>
+      <div class="note"><b>Keeping phone and PC in step:</b> take a Backup on one device, open it with "Restore / sync" on the other. Cases are merged — the most recently edited copy of each case wins, and deletions carry across — so nothing is duplicated. Do the same in the other direction to bring both up to date.</div>
+    </div>
+    <div class="panel">
+      <h2>Security</h2>
+      <div id="pinBox"></div>
+      <div class="note">With a PIN set, all saved cases are encrypted on this device (AES-256) and the app locks itself after the idle time chosen. <b>If you forget the PIN the data cannot be recovered</b> — keep a backup.</div>
+    </div>
+    <div class="panel">
+      <h2>Office holidays</h2>
+      <textarea id="hol" style="min-height:120px" placeholder="2026-12-25"></textarea>
+      <div class="rowbtns" style="margin-top:8px"><button class="primary" id="btnHolSave">Save holidays</button></div>
+      <div class="note">One date per line (YYYY-MM-DD). Working-day timelines skip Saturdays, Sundays and these dates.</div>
+    </div>
+    <div class="panel">
+      <h2>Checklists</h2>
+      <select id="clType" style="margin-bottom:8px"></select>
+      <textarea id="clText" style="min-height:150px"></textarea>
+      <div class="rowbtns" style="margin-top:8px"><button class="primary" id="btnClSave">Save checklist</button><button id="btnClReset">Restore default</button></div>
+      <div class="note">One item per line. Each case of this type shows these items as tick-boxes.</div>
+    </div>
+    <div class="panel">
+      <h2>Erase</h2>
+      <button class="danger" id="btnErase">Erase all data on this device</button>
+    </div>
+    <div class="note" style="padding:0 4px 20px">Statutory timelines used: Rule 9, 22, 23, 88C, 88D, 90, 99, 101 of the CGST Rules; <i>Sections 54(7), 56, 65(4), 65(6), 73, 74, 74A</i> of the CGST Act. Timelines extended by notification (e.g. under <i>Section 168A</i>) are not built in — enter the extended date as a manual due date.</div>
+  </section>
+</main>
+
+<!-- ============ CASE FORM ============ -->
+<dialog id="dlg">
+  <form method="dialog" id="frm">
+    <div class="dh"><h3 id="dlgTitle">New case</h3><button type="button" id="btnClose">✕</button></div>
+    <div class="db">
+      <div class="grid">
+        <div class="full">
+          <label for="cType">Case type</label>
+          <select id="cType"></select>
+        </div>
+        <div>
+          <label for="cGstin">GSTIN</label>
+          <input id="cGstin" maxlength="15" autocomplete="off" style="text-transform:uppercase">
+          <div class="hint" id="gstinHint"></div>
+        </div>
+        <div>
+          <label for="cName">Trade / legal name</label>
+          <input id="cName" autocomplete="off">
+        </div>
+        <div>
+          <label for="cRef">ARN / DIN / reference no.</label>
+          <input id="cRef" autocomplete="off">
+        </div>
+        <div>
+          <label for="cPeriod">Period</label>
+          <input id="cPeriod" placeholder="e.g. Apr–Jun 2024">
+        </div>
+        <div>
+          <label for="cStage">Current stage</label>
+          <select id="cStage"></select>
+        </div>
+        <div>
+          <label for="cHear">Next hearing / visit date</label>
+          <input id="cHear" type="date">
+        </div>
+
+        <div class="sec">Dates</div>
+        <div>
+          <label for="cRecv" id="lRecv">Date received</label>
+          <input id="cRecv" type="date">
+        </div>
+        <div id="wD1">
+          <label for="cD1" id="lD1">—</label>
+          <input id="cD1" type="date">
+        </div>
+        <div id="wD2">
+          <label for="cD2" id="lD2">—</label>
+          <input id="cD2" type="date">
+        </div>
+        <div id="wPv" class="chk full">
+          <input id="cPv" type="checkbox"><label for="cPv">Physical verification required (Aadhaar authentication not done / risk-based)</label>
+        </div>
+
+        <div id="wLim" class="full">
+          <div class="grid3">
+            <div><label for="cFy">Financial year</label><select id="cFy"><option value="">—</option></select></div>
+            <div><label for="cSec">Section</label>
+              <select id="cSec"><option value="">—</option><option value="73">Section 73</option><option value="74">Section 74</option><option value="74A">Section 74A</option></select></div>
+            <div><label for="cAr">Due date of annual return</label><input id="cAr" type="date"></div>
+          </div>
+          <div class="hint">Filled in as 31 December after the FY — change it if the due date was extended for that year.</div>
+        </div>
+
+        <div class="full"><div class="miles" id="miles"></div></div>
+        <div>
+          <label for="cManual">Due date (manual / override)</label>
+          <input id="cManual" type="date">
+          <div class="hint">Leave blank to use the computed date.</div>
+        </div>
+        <div>
+          <label for="cStatus">Status</label>
+          <select id="cStatus">
+            <option value="pending">Pending</option>
+            <option value="disposed">Disposed</option>
+          </select>
+        </div>
+        <div id="wDisp">
+          <label for="cDisp">Date of disposal</label>
+          <input id="cDisp" type="date">
+        </div>
+
+        <div class="sec" id="secAmt">Amounts (₹)</div>
+        <div class="full" id="wAmt">
+          <div class="grid3">
+            <div><label for="cA1" id="lA1"></label><input id="cA1" type="number" step="0.01" min="0"></div>
+            <div><label for="cA2" id="lA2"></label><input id="cA2" type="number" step="0.01" min="0"></div>
+            <div><label for="cA3" id="lA3"></label><input id="cA3" type="number" step="0.01" min="0"></div>
+          </div>
+        </div>
+
+        <div class="sec" id="secCl">Checklist</div>
+        <div class="full checks" id="checks"></div>
+
+        <div class="sec">Notes</div>
+        <div class="full">
+          <label for="cRemarks">Remarks / next action</label>
+          <textarea id="cRemarks"></textarea>
+        </div>
+        <div class="full" id="wHist" style="display:none">
+          <label>History</label>
+          <div class="hist" id="hist"></div>
+        </div>
+      </div>
+    </div>
+    <div class="df">
+      <button type="button" class="danger" id="btnDelete">Delete</button>
+      <div style="display:flex;gap:8px">
+        <button type="button" id="btnCancel">Cancel</button>
+        <button type="submit" class="primary">Save</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ TAXPAYER VIEW ============ -->
+<dialog id="dlgTp">
+  <div class="dh"><h3 id="tpTitle">Taxpayer</h3><button type="button" id="btnTpClose">✕</button></div>
+  <div class="db" id="tpBody"></div>
+  <div class="df"><span></span><button class="primary" id="btnTpNew">+ New case for this GSTIN</button></div>
+</dialog>
+
+<!-- ============ IMPORT MAPPING ============ -->
+<dialog id="dlgImp">
+  <div class="dh"><h3>Match columns</h3><button type="button" id="btnImpClose">✕</button></div>
+  <div class="db">
+    <div class="hint" id="impInfo" style="margin-bottom:10px"></div>
+    <div class="maprow"><label>Case type</label><select id="impTypeMode"></select></div>
+    <div id="impMap"></div>
+    <div class="chk" style="margin-top:8px"><input type="checkbox" id="impSkip" checked><label for="impSkip">Skip rows already in the tracker (same type, GSTIN and reference)</label></div>
+    <div class="hint" id="impPreview" style="margin-top:10px"></div>
+  </div>
+  <div class="df"><span></span><button class="primary" id="btnImpGo">Import</button></div>
+</dialog>
+
+<!-- ============ PASSWORD ============ -->
+<dialog id="dlgPw" style="width:min(420px,96vw)">
+  <div class="dh"><h3 id="pwTitle">Password</h3><button type="button" id="btnPwClose">✕</button></div>
+  <div class="db">
+    <div class="hint" id="pwMsg" style="margin-bottom:8px"></div>
+    <input id="pwIn" type="password" autocomplete="new-password">
+    <div class="hint warn" id="pwErr"></div>
+  </div>
+  <div class="df"><button type="button" id="btnPwAlt"></button><button class="primary" id="btnPwOk">OK</button></div>
+</dialog>
+
+<!-- ============ CONFIRM ============ -->
+<dialog id="dlgCf" style="width:min(420px,96vw)">
+  <div class="db" id="cfMsg" style="padding-top:20px"></div>
+  <div class="df"><button type="button" id="btnCfNo">Cancel</button><button class="primary" id="btnCfYes">Confirm</button></div>
+</dialog>
+
+<div id="tip"></div>
+<div id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* =====================================================================
+   BASICS
+   ===================================================================== */
+var KEY = "gstCaseTracker.v1";
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(ch){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]; }); }
+function num(v){ var n = parseFloat(v); return isFinite(n) ? n : 0; }
+function money(n){ n = num(n); return "₹" + n.toLocaleString("en-IN", {maximumFractionDigits:0}); }
+function toast(msg){ var t = $("toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toast.h); toast.h = setTimeout(function(){ t.style.display = "none"; }, 3200); }
+function confirmBox(msg, yesLabel, cb){
+  $("cfMsg").innerHTML = msg; $("btnCfYes").textContent = yesLabel || "Confirm";
+  $("btnCfYes").onclick = function(){ $("dlgCf").close(); cb(); };
+  $("btnCfNo").onclick = function(){ $("dlgCf").close(); };
+  $("dlgCf").showModal();
+}
+
+/* ---------- dates ---------- */
+function parse(s){ if(!s) return null; var p = String(s).split("-"); if(p.length !== 3) return null; var d = new Date(+p[0], +p[1]-1, +p[2]); return isNaN(d) ? null : d; }
+function iso(d){ if(!d) return ""; var m = d.getMonth()+1, dd = d.getDate(); return d.getFullYear()+"-"+(m<10?"0":"")+m+"-"+(dd<10?"0":"")+dd; }
+function fmt(s){ var d = typeof s === "string" ? parse(s) : s; if(!d) return "—"; return d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}); }
+function today(){ var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+function todayIso(){ return iso(today()); }
+function addDays(s, n){ var d = parse(s); if(!d) return null; d.setDate(d.getDate()+n); return iso(d); }
+function addMonths(s, n){ var d = parse(s); if(!d) return null; var day = d.getDate();
+  d.setDate(1); d.setMonth(d.getMonth()+n);
+  var last = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  d.setDate(Math.min(day, last)); return iso(d); }
+function isHoliday(d){ var w = d.getDay(); return w === 0 || w === 6 || db.holidays.indexOf(iso(d)) >= 0; }
+function addWorkingDays(s, n){ var d = parse(s); if(!d) return null; var c = 0;
+  while(c < n){ d.setDate(d.getDate()+1); if(!isHoliday(d)) c++; } return iso(d); }
+function daysBetween(a, b){ return Math.round((parse(b) - parse(a)) / 86400000); }
+function fyOf(s){ var d = parse(s); if(!d) return ""; var y = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear()-1; return y + "-" + String(y+1).slice(2); }
+function fyStartYear(fy){ return fy ? parseInt(fy.slice(0,4), 10) : null; }
+function monthName(ym){ var p = ym.split("-"); return new Date(+p[0], +p[1]-1, 1).toLocaleDateString("en-IN",{month:"long",year:"numeric"}); }
+
+/* =====================================================================
+   CASE TYPES, STATUTORY TIMELINES, CHECKLISTS
+   Milestones: {label, date, basis, info?}. info:true = shown, never active.
+   Active due date = last non-info milestone, unless manual date given.
+   ===================================================================== */
+function limitation(c){
+  if(!c.ar || !c.sec) return [];
+  var m = [];
+  if(c.sec === "74A"){
+    m.push({label:"Last date to issue SCN", date:addMonths(c.ar,42), basis:"Section 74A(2) — 42 months from due date of annual return", info:!!c.d1});
+    if(c.d1) m.push({label:"Order to be issued by", date:addMonths(c.d1,12), basis:"Section 74A(7) — 12 months from issue of SCN (extendable by up to 6 months)"});
+  } else if(c.sec === "73"){
+    m.push({label:"Last date to issue SCN", date:addMonths(c.ar,33), basis:"Section 73(2) — at least 3 months before the time limit in Section 73(10)", info:!!c.d1});
+    m.push({label:"Order to be issued by", date:addMonths(c.ar,36), basis:"Section 73(10) — 3 years from due date of annual return", info:!c.d1});
+  } else if(c.sec === "74"){
+    m.push({label:"Last date to issue SCN", date:addMonths(c.ar,54), basis:"Section 74(2) — at least 6 months before the time limit in Section 74(10)", info:!!c.d1});
+    m.push({label:"Order to be issued by", date:addMonths(c.ar,60), basis:"Section 74(10) — 5 years from due date of annual return", info:!c.d1});
+  }
+  return m;
+}
+
+var TYPES = {
+  REF: {
+    label:"Refund (RFD-01)", short:"Refund",
+    recv:"Date of filing of RFD-01", d1:"Date of acknowledgement (RFD-02)", d2:"Refund paid / RFD-06 order on",
+    amt:["Claimed","Sanctioned","Rejected"],
+    stages:["Received","Deficiency memo (RFD-03) issued","Acknowledged (RFD-02)","Provisional refund (RFD-04)","SCN (RFD-08) issued","Order (RFD-06) issued","Payment advice (RFD-05)"],
+    checklist:["RFD-01 and statement for the refund category examined","Supporting documents under Rule 89(2) verified","Declaration / CA certificate under Rule 89(2)(l) / (m) checked, as applicable","GSTR-1 and GSTR-3B for the period verified","Outstanding dues checked (Section 54(10))","Acknowledgement (RFD-02) or deficiency memo (RFD-03) issued","Order (RFD-06) and payment advice (RFD-05) issued"],
+    miles:function(c){
+      var m = [{label:"Acknowledgement (RFD-02) / deficiency memo (RFD-03) due", date:addDays(c.recv,15), basis:"Rule 90(2), 90(3) — 15 days", info:!!c.d1}];
+      m.push({label:"Refund order due", date:addDays(c.d1 || c.recv,60), basis:"Section 54(7) — 60 days from receipt of application complete in all respects" + (c.d1 ? "" : " (from filing date until RFD-02 date is entered)")});
+      return m;
+    }
+  },
+  REG_NEW: {
+    label:"Registration – new (REG-01)", short:"New regn",
+    recv:"ARN date (REG-01 submitted)", d1:"REG-03 issued on", d2:"Clarification (REG-04) received on", pv:true, amt:null,
+    stages:["Received","Physical verification","REG-03 issued","REG-04 received","Approved (REG-06)","Rejected (REG-05)"],
+    checklist:["Aadhaar authentication status checked","Identity and address proofs verified","Proof of principal place of business verified","Physical verification report uploaded (if required)","Approval (REG-06) / REG-03 / rejection (REG-05) issued"],
+    miles:function(c){
+      var m = [c.pv
+        ? {label:"Approve / issue REG-03 by", date:addDays(c.recv,30), basis:"Rule 9(1) proviso, 9(2) — 30 days (physical verification)", info:!!c.d1}
+        : {label:"Approve / issue REG-03 by", date:addWorkingDays(c.recv,7), basis:"Rule 9(1), 9(2) — 7 working days", info:!!c.d1}];
+      if(c.d1) m.push({label:"Applicant's reply (REG-04) due", date:addWorkingDays(c.d1,7), basis:"Rule 9(2) — 7 working days from REG-03", info:!!c.d2});
+      if(c.d2) m.push({label:"Approve / reject after clarification by", date:addWorkingDays(c.d2,7), basis:"Rule 9(4) — 7 working days from receipt of clarification"});
+      return m;
+    }
+  },
+  REG_CAN: {
+    label:"Registration – cancellation (REG-17)", short:"Cancellation",
+    recv:"REG-17 issued on", d1:"Reply (REG-18) received on", d2:null, amt:null,
+    stages:["REG-17 issued","Suspended","Reply (REG-18) received","Dropped (REG-20)","Cancelled (REG-19)"],
+    checklist:["Grounds for cancellation recorded (Section 29(2))","REG-17 served","Reply (REG-18) examined","Order REG-19 / REG-20 issued"],
+    miles:function(c){
+      var m = [{label:"Taxpayer's reply (REG-18) due", date:addWorkingDays(c.recv,7), basis:"Rule 22(1) — 7 working days", info:!!c.d1}];
+      if(c.d1) m.push({label:"Order (REG-19 / REG-20) due", date:addDays(c.d1,30), basis:"Rule 22(3) — 30 days from date of reply"});
+      return m;
+    }
+  },
+  REG_REV: {
+    label:"Registration – revocation (REG-21)", short:"Revocation",
+    recv:"REG-21 filed on", d1:"REG-23 issued on", d2:"Reply (REG-24) received on", amt:null,
+    stages:["Received","REG-23 issued","Reply (REG-24) received","Revoked (REG-22)","Rejected (REG-05)"],
+    checklist:["Application within time limit (Section 30)","Pending returns furnished and dues paid (Rule 23(1) proviso)","Order REG-22 / REG-05 issued"],
+    miles:function(c){
+      var m = [{label:"Revoke (REG-22) / issue REG-23 by", date:addDays(c.recv,30), basis:"Rule 23(2) — 30 days from receipt of application", info:!!c.d1}];
+      if(c.d1) m.push({label:"Applicant's reply (REG-24) due", date:addWorkingDays(c.d1,7), basis:"Rule 23(3) — 7 working days", info:!!c.d2});
+      if(c.d2) m.push({label:"Decision after reply due", date:addDays(c.d2,30), basis:"Rule 23(3) — 30 days from receipt of clarification"});
+      return m;
+    }
+  },
+  SCR: {
+    label:"Scrutiny of returns (ASMT-10)", short:"Scrutiny",
+    recv:"Case allotted on", d1:"ASMT-10 issued on", d2:"Reply (ASMT-11) received on",
+    amt:["Discrepancy","Recovered (DRC-03)","Dropped / explained"],
+    stages:["Allotted","ASMT-10 issued","ASMT-11 received","ASMT-12 issued (accepted)","Referred for action u/s 73/74/74A"],
+    checklist:["Returns (GSTR-1, GSTR-3B, GSTR-9/9C) downloaded","Discrepancies identified and quantified","ASMT-10 issued","ASMT-11 reply examined","DRC-03 payment verified","ASMT-12 issued / action proposed"],
+    miles:function(c){
+      var m = [];
+      if(c.d1) m.push({label:"Taxpayer's reply (ASMT-11) due", date:addDays(c.d1,30), basis:"Rule 99(2) — 30 days or such further period as permitted"});
+      return m;
+    }
+  },
+  DRC01B: {
+    label:"DRC-01B (liability mismatch)", short:"DRC-01B",
+    recv:"DRC-01B intimation date", d1:"Reply / payment received on", d2:null,
+    amt:["Difference intimated","Paid (DRC-03)","Explained"],
+    stages:["Intimation issued","Reply / payment received","Closed","Action initiated"],
+    checklist:["Intimation details checked","Reply / DRC-03 payment verified","Closure or further action decided"],
+    miles:function(c){ return [{label:"Taxpayer's payment / explanation due", date:addDays(c.recv,7), basis:"Rule 88C(2) — 7 days"}]; }
+  },
+  DRC01C: {
+    label:"DRC-01C (ITC mismatch)", short:"DRC-01C",
+    recv:"DRC-01C intimation date", d1:"Reply / payment received on", d2:null,
+    amt:["Difference intimated","Paid / reversed (DRC-03)","Explained"],
+    stages:["Intimation issued","Reply / payment received","Closed","Action initiated"],
+    checklist:["Intimation details checked","Reply / DRC-03 payment verified","Closure or further action decided"],
+    miles:function(c){ return [{label:"Taxpayer's payment / explanation due", date:addDays(c.recv,7), basis:"Rule 88D(1) — 7 days"}]; }
+  },
+  AUDIT: {
+    label:"Audit (ADT-01)", short:"Audit",
+    recv:"ADT-01 issued on", d1:"Audit commenced on", d2:"Audit concluded on",
+    amt:["Short payment detected","Recovered","Dropped"],
+    stages:["ADT-01 issued","Audit in progress","Audit concluded","ADT-02 issued"],
+    checklist:["ADT-01 issued (Rule 101(2))","Records called for and examined","Discrepancies communicated (Rule 101(4))","Taxpayer's reply considered","ADT-02 issued (Section 65(6))"],
+    miles:function(c){
+      var m = [{label:"Earliest date of audit (notice period)", date:addWorkingDays(c.recv,15), basis:"Rule 101(2) — at least 15 working days' notice", info:true}];
+      if(c.d1) m.push({label:"Audit to be completed by", date:addMonths(c.d1,3), basis:"Section 65(4) — 3 months from commencement (extendable by Commissioner up to 6 months)", info:!!c.d2});
+      if(c.d2) m.push({label:"Findings (ADT-02) due", date:addDays(c.d2,30), basis:"Section 65(6) — 30 days from conclusion"});
+      return m;
+    }
+  },
+  DRC01A: {
+    label:"DRC-01A (pre-SCN intimation)", short:"DRC-01A", lim:true,
+    recv:"Case received on", d1:null, d2:"DRC-01A issued on",
+    amt:["Tax proposed","Paid (DRC-03)","Dropped"],
+    stages:["Received","DRC-01A issued","Reply (Part B) received","Dropped","SCN (DRC-01) issued"],
+    checklist:["Tax, interest and penalty ascertained","DRC-01A issued","Part B reply / DRC-03 payment examined","Decision on SCN taken"],
+    miles:function(c){ return limitation({ar:c.ar, sec:c.sec}); }
+  },
+  SCN: {
+    label:"SCN / adjudication (DRC-01)", short:"SCN", lim:true,
+    recv:"Case received on", d1:"SCN (DRC-01) issued on", d2:"Reply (DRC-06) received on",
+    amt:["Tax demanded","Paid (DRC-03)","Demand confirmed"],
+    stages:["Received","SCN issued","Reply received","Personal hearing","Order (DRC-07) issued"],
+    checklist:["SCN (DRC-01) and summary uploaded","Reply (DRC-06) received","Personal hearing granted (Section 75(4))","Order and summary (DRC-07) issued"],
+    miles:function(c){ return limitation(c); }
+  },
+  NGTP: {
+    label:"NGTP verification", short:"NGTP",
+    recv:"Case received on", d1:"Site visit on", d2:"Report sent for approval on",
+    amt:["ITC / amount involved","Blocked / reversed","—"],
+    stages:["Received","Site visit done","Report submitted","Approved – NGTP","Approved – not NGTP"],
+    checklist:["Site visit conducted","Findings and photographs recorded","Report sent for approval","Approval of supervisory authority received"],
+    miles:function(){ return []; }
+  },
+  OTHER: {
+    label:"Other", short:"Other",
+    recv:"Date received", d1:"Key date 1", d2:"Key date 2",
+    amt:["Amount involved","Recovered","Dropped"],
+    stages:["Received","In progress","Closed"],
+    checklist:[],
+    miles:function(){ return []; }
+  }
+};
+var TYPE_KEYS = Object.keys(TYPES);
+
+/* =====================================================================
+   STORAGE (optional PIN encryption)
+   ===================================================================== */
+var db = null, pinKey = null, pinSalt = null, storageOk = true, saveChain = Promise.resolve();
+var hasCrypto = !!(window.crypto && crypto.subtle);
+var enc = new TextEncoder(), dec = new TextDecoder();
+function b64(buf){ var s = "", b = new Uint8Array(buf); for(var i=0;i<b.length;i++) s += String.fromCharCode(b[i]); return btoa(s); }
+function unb64(s){ var r = atob(s), b = new Uint8Array(r.length); for(var i=0;i<r.length;i++) b[i] = r.charCodeAt(i); return b; }
+function deriveKey(pin, salt){
+  return crypto.subtle.importKey("raw", enc.encode(pin), "PBKDF2", false, ["deriveKey"]).then(function(base){
+    return crypto.subtle.deriveKey({name:"PBKDF2", salt:salt, iterations:200000, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["encrypt","decrypt"]);
+  });
+}
+function encryptWith(key, salt, obj){
+  var iv = crypto.getRandomValues(new Uint8Array(12));
+  return crypto.subtle.encrypt({name:"AES-GCM", iv:iv}, key, enc.encode(JSON.stringify(obj))).then(function(ct){
+    return {salt:b64(salt), iv:b64(iv), ct:b64(ct)};
+  });
+}
+function decryptWith(pin, e){
+  var salt = unb64(e.salt);
+  return deriveKey(pin, salt).then(function(key){
+    return crypto.subtle.decrypt({name:"AES-GCM", iv:unb64(e.iv)}, key, unb64(e.ct)).then(function(pt){
+      return {data:JSON.parse(dec.decode(pt)), key:key, salt:salt};
+    });
+  });
+}
+function readRaw(){ try { return localStorage.getItem(KEY); } catch(e){ storageOk = false; return null; } }
+function writeRaw(s){ try { localStorage.setItem(KEY, s); } catch(e){ storageOk = false; $("storeWarn").style.display = "block"; } }
+function persist(){
+  if(!db) return;
+  if(pinKey){
+    var snapshot = JSON.parse(JSON.stringify(db));
+    saveChain = saveChain.then(function(){ return encryptWith(pinKey, pinSalt, snapshot).then(function(e){ writeRaw(JSON.stringify({v:2, enc:e})); }); })
+      .catch(function(){ toast("Could not save — encryption error"); });
+  } else writeRaw(JSON.stringify(db));
+}
+function normalise(d){
+  d = d || {};
+  d.cases = Array.isArray(d.cases) ? d.cases : [];
+  d.holidays = Array.isArray(d.holidays) ? d.holidays : [];
+  d.checklists = d.checklists || {};
+  d.deleted = d.deleted || {};
+  d.settings = d.settings || {};
+  if(!d.settings.autolock) d.settings.autolock = 10;
+  d.cases.forEach(function(c){
+    if(!c.updatedAt) c.updatedAt = c.updated ? (parse(c.updated) || new Date(0)).getTime() : Date.now();
+    if(c.amount && !c.a1) { c.a1 = c.amount; delete c.amount; }
+    if(!c.checks) c.checks = {};
+  });
+  return d;
+}
+function checklistFor(type){ var l = db.checklists[type]; return Array.isArray(l) ? l : TYPES[type].checklist; }
+
+/* =====================================================================
+   DUE-DATE LOGIC
+   ===================================================================== */
+function milestones(c){ var t = TYPES[c.type]; if(!t || !c.recv) return []; return t.miles(c).filter(function(m){ return m.date; }); }
+function activeDue(c){
+  if(c.manual) return {date:c.manual, label:"Due (manual)", basis:"Manual"};
+  var ms = milestones(c).filter(function(m){ return !m.info; });
+  return ms.length ? ms[ms.length-1] : null;
+}
+function state(c){
+  if(c.status === "disposed") return "disp";
+  var a = activeDue(c); if(!a) return "ok";
+  var diff = daysBetween(todayIso(), a.date);
+  if(diff < 0) return "over"; if(diff <= 7) return "soon"; return "ok";
+}
+function refundInterest(c){
+  if(c.type !== "REF" || !c.recv) return null;
+  var start = addDays(c.recv, 60), end = c.d2 || todayIso();
+  var days = daysBetween(start, end);
+  if(days <= 0) return null;
+  var base = num(c.a2) > 0 ? num(c.a2) : num(c.a1);
+  return {days:days, base:base, amount:base * 0.06 * days / 365, from:addDays(start,1), to:end, paid:!!c.d2};
+}
+
+/* ---------- GSTIN ---------- */
+var GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+function gstinCheck(g){
+  var CH = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", sum = 0;
+  for(var i=0;i<14;i++){ var v = CH.indexOf(g[i]) * (i % 2 ? 2 : 1); sum += Math.floor(v/36) + (v % 36); }
+  return CH[(36 - (sum % 36)) % 36] === g[14];
+}
+
+/* =====================================================================
+   STARTUP & LOCK
+   ===================================================================== */
+var started = false, lastActive = Date.now();
+function boot(){
+  var raw = readRaw(), parsed = null;
+  if(!storageOk) $("storeWarn").style.display = "block";
+  try { parsed = raw ? JSON.parse(raw) : null; } catch(e){ parsed = null; }
+  if(parsed && parsed.enc){ showLock(); return; }
+  db = normalise(parsed); start();
+}
+function showLock(){
+  db = null; pinKey = null;
+  $("lock").style.display = "flex"; $("lockPin").value = ""; $("lockErr").textContent = "";
+  ["list","byType","cal","dayList","mpr","ageing","amts","intTable","chartMonths","chartTypes"].forEach(function(id){ $(id).innerHTML = ""; });
+  closeAllDialogs();
+  setTimeout(function(){ $("lockPin").focus(); }, 50);
+}
+function closeAllDialogs(){ document.querySelectorAll("dialog").forEach(function(d){ if(d.open) d.close(); }); }
+function unlock(){
+  var pin = $("lockPin").value;
+  if(!pin){ return; }
+  if(!hasCrypto){ $("lockErr").textContent = "This browser can't decrypt the data."; return; }
+  var parsed = JSON.parse(readRaw());
+  $("btnUnlock").disabled = true; $("lockErr").textContent = "Checking…";
+  decryptWith(pin, parsed.enc).then(function(r){
+    db = normalise(r.data); pinKey = r.key; pinSalt = r.salt;
+    $("lock").style.display = "none"; $("btnUnlock").disabled = false; lastActive = Date.now();
+    start();
+  }).catch(function(){ $("lockErr").textContent = "Wrong PIN"; $("btnUnlock").disabled = false; });
+}
+$("btnUnlock").onclick = unlock;
+$("lockPin").addEventListener("keydown", function(e){ if(e.key === "Enter") unlock(); });
+$("lnkForgot").onclick = function(e){
+  e.preventDefault();
+  $("lock").style.display = "none";
+  confirmBox("<b>Erase all data and remove the PIN?</b><br><br>Without the PIN the saved cases cannot be decrypted. After erasing, you can restore from a backup file.", "Erase everything", function(){
+    try { localStorage.removeItem(KEY); } catch(err){}
+    db = normalise(null); pinKey = null; start(); toast("Data erased");
+  });
+  $("btnCfNo").onclick = function(){ $("dlgCf").close(); $("lock").style.display = "flex"; };
+};
+$("btnLockNow").onclick = function(){ if(pinKey) showLock(); };
+["click","keydown","touchstart","scroll"].forEach(function(ev){ document.addEventListener(ev, function(){ lastActive = Date.now(); }, {passive:true}); });
+setInterval(function(){
+  if(!pinKey || !db) return;
+  var mins = +db.settings.autolock;
+  if(mins > 0 && Date.now() - lastActive > mins * 60000) showLock();
+}, 15000);
+
+function start(){
+  $("todayLbl").textContent = "Today: " + fmt(today());
+  $("btnLockNow").style.display = pinKey ? "" : "none";
+  if(!started){ started = true; initStatic(); }
+  renderAll();
+}
+
+/* =====================================================================
+   STATIC SETUP
+   ===================================================================== */
+function fyList(){
+  var out = [], end = fyStartYear(fyOf(todayIso()));
+  for(var y = 2017; y <= end; y++) out.push(y + "-" + String(y+1).slice(2));
+  return out.reverse();
+}
+function initStatic(){
+  TYPE_KEYS.forEach(function(k){
+    [$("cType"), $("fType"), $("clType")].forEach(function(sel){
+      var o = document.createElement("option"); o.value = k; o.textContent = TYPES[k].label; sel.appendChild(o);
+    });
+  });
+  fyList().forEach(function(fy){
+    [$("cFy"), $("fFy")].forEach(function(sel){ var o = document.createElement("option"); o.value = fy; o.textContent = "FY " + fy; sel.appendChild(o); });
+  });
+  var t = today(); $("rMonth").value = t.getFullYear() + "-" + String(t.getMonth()+1).padStart(2,"0");
+  calMonth = new Date(t.getFullYear(), t.getMonth(), 1);
+  fillStageFilter();
+}
+
+/* ---------- tabs ---------- */
+var currentView = "cases";
+$("tabs").addEventListener("click", function(e){
+  var b = e.target.closest("button"); if(!b) return;
+  currentView = b.dataset.v;
+  document.querySelectorAll("#tabs button").forEach(function(x){ x.classList.toggle("on", x === b); });
+  document.querySelectorAll(".view").forEach(function(v){ v.classList.toggle("on", v.id === "v-" + currentView); });
+  renderAll();
+});
+function renderAll(){
+  if(!db) return;
+  renderStats();
+  if(currentView === "cases") renderList();
+  if(currentView === "calendar") renderCalendar();
+  if(currentView === "reports") renderReports();
+  if(currentView === "data") renderSettings();
+}
+
+/* =====================================================================
+   CASE FORM
+   ===================================================================== */
+var dlg = $("dlg"), editingId = null;
+function readForm(){
+  var checks = {};
+  document.querySelectorAll("#checks input[type=checkbox]").forEach(function(cb){ if(cb.checked) checks[cb.dataset.item] = true; });
+  return {
+    type:$("cType").value, gstin:$("cGstin").value.trim().toUpperCase(), name:$("cName").value.trim(),
+    ref:$("cRef").value.trim(), period:$("cPeriod").value.trim(), stage:$("cStage").value, hear:$("cHear").value,
+    recv:$("cRecv").value, d1:$("cD1").value, d2:$("cD2").value, pv:$("cPv").checked,
+    fy:$("cFy").value, sec:$("cSec").value, ar:$("cAr").value,
+    manual:$("cManual").value, status:$("cStatus").value, disposed:$("cDisp").value,
+    a1:$("cA1").value, a2:$("cA2").value, a3:$("cA3").value,
+    remarks:$("cRemarks").value.trim(), checks:checks
+  };
+}
+function setStages(type, cur){
+  var sel = $("cStage"); sel.innerHTML = "";
+  var list = TYPES[type].stages.slice();
+  if(cur && list.indexOf(cur) < 0) list.unshift(cur);
+  list.forEach(function(s){ var o = document.createElement("option"); o.textContent = s; sel.appendChild(o); });
+  if(cur) sel.value = cur;
+}
+function setChecks(type, done){
+  var items = checklistFor(type), box = $("checks");
+  $("secCl").style.display = items.length ? "" : "none";
+  box.innerHTML = items.map(function(it, i){
+    return '<div class="chk"><input type="checkbox" id="ck' + i + '" data-item="' + esc(it) + '"' + (done && done[it] ? " checked" : "") + '><label for="ck' + i + '">' + esc(it) + "</label></div>";
+  }).join("");
+}
+function applyType(){
+  var t = TYPES[$("cType").value];
+  $("lRecv").textContent = t.recv;
+  $("wD1").style.display = t.d1 ? "" : "none"; $("lD1").textContent = t.d1 || "";
+  $("wD2").style.display = t.d2 ? "" : "none"; $("lD2").textContent = t.d2 || "";
+  $("wPv").style.display = t.pv ? "" : "none";
+  $("wLim").style.display = t.lim ? "" : "none";
+  $("secAmt").style.display = $("wAmt").style.display = t.amt ? "" : "none";
+  if(t.amt){ $("lA1").textContent = t.amt[0]; $("lA2").textContent = t.amt[1]; $("lA3").textContent = t.amt[2]; }
+}
+function onFyChange(){
+  var fy = $("cFy").value; if(!fy) return;
+  var y = fyStartYear(fy);
+  if(!$("cAr").value || $("cAr").dataset.auto === "1"){ $("cAr").value = (y+1) + "-12-31"; $("cAr").dataset.auto = "1"; }
+  if(y >= 2024) $("cSec").value = "74A";
+  else if($("cSec").value === "74A") $("cSec").value = "73";
+  renderMiles();
+}
+function renderMiles(){
+  var c = readForm(), ms = milestones(c), box = $("miles"), t = TYPES[c.type];
+  var warn = "";
+  if(t.lim && c.fy && c.sec){
+    var y = fyStartYear(c.fy);
+    if(y >= 2024 && c.sec !== "74A") warn = '<div class="hint warn">Section 74A applies to tax for FY 2024-25 onwards (Section 74A(12)).</div>';
+    if(y < 2024 && c.sec === "74A") warn = '<div class="hint warn">Section 74A applies only from FY 2024-25 — choose Section 73 or 74 for this year.</div>';
+  }
+  if(!c.recv){ box.innerHTML = '<span class="hint">Enter the dates to see the statutory timeline.</span>'; return; }
+  var html = "";
+  if(!ms.length){
+    html = '<span class="hint">' + (t.lim ? "Choose the FY and section to see the limitation dates." : "No statutory timeline is computed for this case type — use the manual due date.") + "</span>";
+  } else {
+    var a = activeDue(c); html = "<table>";
+    ms.forEach(function(m){
+      var isA = a && !c.manual && m.label === a.label && m.date === a.date;
+      html += "<tr><td>" + (isA ? "<b>" : "") + esc(m.label) + (isA ? "</b>" : "") + (m.info ? ' <span class="hint">(for reference)</span>' : "") +
+        '<div class="basis">' + esc(m.basis) + '</div></td><td style="text-align:right;white-space:nowrap">' + (isA ? "<b>" : "") + fmt(m.date) + (isA ? "</b>" : "") + "</td></tr>";
+    });
+    html += "</table>";
+  }
+  var ri = refundInterest(c);
+  if(ri) html += '<div class="hint warn" style="margin-top:6px">More than 60 days since filing — interest under Section 56 may be payable: about ' + money(ri.amount) + " for " + ri.days + " days at 6% p.a." + (ri.paid ? "" : " (till today)") + ".</div>";
+  box.innerHTML = html + warn;
+}
+function gstinHint(){
+  var g = $("cGstin").value.trim().toUpperCase(), h = $("gstinHint");
+  if(!g){ h.textContent = ""; h.className = "hint"; return; }
+  if(!GSTIN_RE.test(g)){ h.textContent = "Format doesn't look like a GSTIN"; h.className = "hint warn"; return; }
+  if(!gstinCheck(g)){ h.textContent = "Check digit doesn't match — please recheck"; h.className = "hint warn"; return; }
+  var others = db.cases.filter(function(x){ return x.gstin === g && x.id !== editingId; }).length;
+  h.textContent = "✓ Valid" + (g.slice(0,2) === "27" ? " (Maharashtra)" : "") + (others ? " · " + others + " other case(s) for this GSTIN" : "");
+  h.className = "hint";
+}
+function toggleDisp(){ $("wDisp").style.display = $("cStatus").value === "disposed" ? "" : "none"; }
+
+function openForm(c, preset){
+  editingId = c ? c.id : null;
+  $("dlgTitle").textContent = c ? "Edit case" : "New case";
+  $("btnDelete").style.visibility = c ? "visible" : "hidden";
+  c = c || Object.assign({type:"SCR", recv:todayIso(), status:"pending", checks:{}}, preset || {});
+  $("cType").value = c.type; applyType(); setStages(c.type, c.stage); setChecks(c.type, c.checks);
+  $("cGstin").value = c.gstin || ""; $("cName").value = c.name || ""; $("cRef").value = c.ref || "";
+  $("cPeriod").value = c.period || ""; $("cHear").value = c.hear || "";
+  $("cRecv").value = c.recv || ""; $("cD1").value = c.d1 || ""; $("cD2").value = c.d2 || "";
+  $("cPv").checked = !!c.pv; $("cFy").value = c.fy || ""; $("cSec").value = c.sec || ""; $("cAr").value = c.ar || ""; $("cAr").dataset.auto = c.ar ? "0" : "1";
+  $("cManual").value = c.manual || ""; $("cStatus").value = c.status || "pending"; $("cDisp").value = c.disposed || "";
+  $("cA1").value = c.a1 || ""; $("cA2").value = c.a2 || ""; $("cA3").value = c.a3 || "";
+  $("cRemarks").value = c.remarks || "";
+  var hist = c.history || [];
+  $("wHist").style.display = hist.length ? "" : "none";
+  $("hist").innerHTML = hist.slice().reverse().map(function(h){ return fmt(h.on) + " — " + esc(h.text); }).join("<br>");
+  toggleDisp(); gstinHint(); renderMiles();
+  dlg.showModal(); $("dlg").querySelector(".db").scrollTop = 0;
+}
+
+$("cType").addEventListener("change", function(){ var t = $("cType").value; applyType(); setStages(t); setChecks(t, readForm().checks); renderMiles(); });
+["cRecv","cD1","cD2","cPv","cManual","cSec","cA1","cA2"].forEach(function(id){ $(id).addEventListener("input", renderMiles); $(id).addEventListener("change", renderMiles); });
+$("cAr").addEventListener("input", function(){ $("cAr").dataset.auto = "0"; renderMiles(); });
+$("cFy").addEventListener("change", onFyChange);
+$("cGstin").addEventListener("input", gstinHint);
+$("cStatus").addEventListener("change", function(){ toggleDisp(); if($("cStatus").value === "disposed" && !$("cDisp").value) $("cDisp").value = todayIso(); });
+$("btnClose").onclick = $("btnCancel").onclick = function(){ dlg.close(); };
+$("btnNew").onclick = function(){ openForm(null); };
+
+$("frm").addEventListener("submit", function(e){
+  e.preventDefault();
+  var c = readForm();
+  if(!c.recv){ $("miles").innerHTML = '<span class="warn">Please enter "' + esc(TYPES[c.type].recv) + '".</span>'; $("cRecv").focus(); return; }
+  if(c.status !== "disposed") c.disposed = "";
+  var now = todayIso();
+  if(editingId){
+    var old = db.cases.find(function(x){ return x.id === editingId; });
+    var hist = old.history || [];
+    if(old.stage !== c.stage) hist.push({on:now, text:"Stage: " + c.stage});
+    if(old.status !== c.status) hist.push({on:now, text:"Status: " + (c.status === "disposed" ? "Disposed" : "Pending")});
+    if((old.hear || "") !== c.hear && c.hear) hist.push({on:now, text:"Hearing / visit fixed for " + fmt(c.hear)});
+    Object.assign(old, c, {history:hist, updatedAt:Date.now()});
+  } else {
+    c.id = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+    c.created = now; c.updatedAt = Date.now(); c.history = [{on:now, text:"Case added — " + c.stage}];
+    db.cases.push(c);
+  }
+  persist(); dlg.close(); renderAll(); toast("Saved");
+});
+$("btnDelete").onclick = function(){
+  if(!editingId) return;
+  var id = editingId;
+  confirmBox("Delete this case permanently?", "Delete", function(){
+    db.cases = db.cases.filter(function(x){ return x.id !== id; });
+    db.deleted[id] = Date.now();
+    persist(); dlg.close(); renderAll(); toast("Case deleted");
+  });
+};
+
+/* =====================================================================
+   CASES LIST & SEARCH
+   ===================================================================== */
+function inMonth(s, ym){ return !!s && s.slice(0,7) === ym; }
+function thisMonth(){ return todayIso().slice(0,7); }
+function renderStats(){
+  var pend = db.cases.filter(function(c){ return c.status !== "disposed"; });
+  $("sPending").textContent = pend.length;
+  $("sOver").textContent = pend.filter(function(c){ return state(c) === "over"; }).length;
+  $("sSoon").textContent = pend.filter(function(c){ return state(c) === "soon"; }).length;
+  $("sDisp").textContent = db.cases.filter(function(c){ return c.status === "disposed" && inMonth(c.disposed, thisMonth()); }).length;
+  var bt = $("byType"), html = "";
+  TYPE_KEYS.forEach(function(k){
+    var n = pend.filter(function(c){ return c.type === k; }).length;
+    if(n) html += '<span class="chip" data-k="' + k + '">' + esc(TYPES[k].label) + "<b>" + n + "</b></span>";
+  });
+  bt.innerHTML = html || '<span class="hint">No pending cases.</span>';
+}
+$("byType").addEventListener("click", function(e){
+  var ch = e.target.closest(".chip"); if(!ch) return;
+  $("fType").value = ch.dataset.k; $("fStatus").value = "pending"; $("fDue").value = ""; fillStageFilter(); renderList();
+});
+function fillStageFilter(){
+  var t = $("fType").value, sel = $("fStage"), cur = sel.value, stages = [];
+  (t ? [t] : TYPE_KEYS).forEach(function(k){ TYPES[k].stages.forEach(function(s){ if(stages.indexOf(s) < 0) stages.push(s); }); });
+  sel.innerHTML = '<option value="">Any stage</option>' + stages.map(function(s){ return "<option>" + esc(s) + "</option>"; }).join("");
+  if(stages.indexOf(cur) >= 0) sel.value = cur;
+}
+function caseFy(c){ return c.fy || ""; }
+function caseAmount(c){ return num(c.a1); }
+
+function filtered(){
+  var q = $("fQ").value.trim().toLowerCase(), terms = q ? q.split(/\s+/) : [];
+  var ft = $("fType").value, fs = $("fStatus").value, fd = $("fDue").value;
+  var fStage = $("fStage").value, fFy = $("fFy").value, rf = $("fRf").value, rt = $("fRt").value,
+      df = $("fDf").value, dt = $("fDt").value, amin = $("fAmin").value, amax = $("fAmax").value, ph = $("fPh").checked;
+  return db.cases.filter(function(c){
+    if(ft && c.type !== ft) return false;
+    if(fd === "dispmonth"){ if(!(c.status === "disposed" && inMonth(c.disposed, thisMonth()))) return false; }
+    else {
+      if(fs && c.status !== fs) return false;
+      var st = state(c);
+      if(fd === "overdue" && st !== "over") return false;
+      if(fd === "soon" && st !== "soon") return false;
+      if(fd === "interest" && !(refundInterest(c) && !c.d2)) return false;
+    }
+    if(fStage && c.stage !== fStage) return false;
+    if(fFy && caseFy(c) !== fFy && fyOf(c.recv) !== fFy) return false;
+    if(rf && c.recv < rf) return false;
+    if(rt && c.recv > rt) return false;
+    if(df || dt){ var a = activeDue(c); if(!a) return false; if(df && a.date < df) return false; if(dt && a.date > dt) return false; }
+    if(amin !== "" && caseAmount(c) < num(amin)) return false;
+    if(amax !== "" && caseAmount(c) > num(amax)) return false;
+    if(ph && !c.hear) return false;
+    if(terms.length){
+      var t = TYPES[c.type] || TYPES.OTHER;
+      var hay = [c.gstin,c.name,c.ref,c.period,c.remarks,c.stage,t.label,t.short,c.fy ? "FY " + c.fy : "",c.sec ? "section " + c.sec : ""].join(" ").toLowerCase();
+      for(var i=0;i<terms.length;i++) if(hay.indexOf(terms[i]) < 0) return false;
+    }
+    return true;
+  });
+}
+function sortRows(rows){
+  var s = $("fSort").value;
+  rows.sort(function(a,b){
+    if(s === "recv") return (b.recv || "").localeCompare(a.recv || "");
+    if(s === "recvOld") return (a.recv || "").localeCompare(b.recv || "");
+    if(s === "amt") return caseAmount(b) - caseAmount(a);
+    if(s === "name") return (a.name || "").localeCompare(b.name || "");
+    if((a.status === "disposed") !== (b.status === "disposed")) return a.status === "disposed" ? 1 : -1;
+    var da = activeDue(a), dbb = activeDue(b);
+    var x = da ? da.date : "9999", y = dbb ? dbb.date : "9999";
+    return x < y ? -1 : x > y ? 1 : 0;
+  });
+  return rows;
+}
+function dueBadge(c){
+  var st = state(c), a = activeDue(c);
+  if(st === "disp") return '<span class="badge b-disp">Disposed ' + fmt(c.disposed) + "</span>";
+  if(!a) return '<span class="badge b-ok">No due date</span>';
+  var d = daysBetween(todayIso(), a.date);
+  return '<span class="badge ' + (st === "over" ? "b-over" : st === "soon" ? "b-soon" : "b-ok") + '">' +
+    (d < 0 ? Math.abs(d) + " day" + (d === -1 ? "" : "s") + " overdue" : d === 0 ? "Due today" : "Due in " + d + " day" + (d === 1 ? "" : "s")) + "</span>";
+}
+function caseCard(c){
+  var st = state(c), a = activeDue(c), t = TYPES[c.type] || TYPES.OTHER;
+  var items = checklistFor(c.type), done = items.filter(function(it){ return c.checks && c.checks[it]; }).length;
+  var ri = c.status !== "disposed" ? refundInterest(c) : null;
+  var meta2 = [];
+  meta2.push("Stage: " + esc(c.stage || "—"));
+  if(items.length) meta2.push("Checklist " + done + "/" + items.length);
+  if(c.hear) meta2.push("<b>Hearing / visit " + fmt(c.hear) + "</b>");
+  if(t.amt && num(c.a1)) meta2.push(esc(t.amt[0]) + " " + money(c.a1));
+  return '<div class="case ' + st + '" data-id="' + c.id + '">' +
+    '<div><div><span class="tag">' + esc(t.short) + '</span><span class="t">' + esc(c.name || "(no name)") + "</span></div>" +
+    '<div class="m">' + (c.gstin ? '<a class="gst" data-g="' + esc(c.gstin) + '">' + esc(c.gstin) + "</a>" : "—") + (c.ref ? " · " + esc(c.ref) : "") + (c.period ? " · " + esc(c.period) : "") + (c.fy ? " · FY " + esc(c.fy) : "") + "</div>" +
+    '<div class="m">' + meta2.join(" · ") + "</div>" +
+    (c.remarks ? '<div class="m">' + esc(c.remarks.length > 90 ? c.remarks.slice(0,90) + "…" : c.remarks) + "</div>" : "") +
+    (ri ? '<div class="m warn">Section 56 interest may apply — ~' + money(ri.amount) + "</div>" : "") +
+    "</div>" +
+    '<div class="due">' + (st !== "disp" && a ? '<div class="m">' + esc(a.label) + '</div><div class="d">' + fmt(a.date) + "</div>" : "") + dueBadge(c) + "</div></div>";
+}
+function renderList(){
+  var rows = sortRows(filtered()), list = $("list");
+  var advCount = ["fStage","fFy","fRf","fRt","fDf","fDt","fAmin","fAmax"].filter(function(id){ return $(id).value; }).length + ($("fPh").checked ? 1 : 0);
+  $("btnAdv").textContent = "Filters" + (advCount ? " (" + advCount + ")" : "") + " ▾";
+  $("resCount").textContent = rows.length + " case" + (rows.length === 1 ? "" : "s") + " shown";
+  if(!rows.length){ list.innerHTML = '<div class="empty">' + (db.cases.length ? "No cases match. Try clearing the filters." : "No cases yet — tap “+ New case” to add your first one, or import a list under Settings.") + "</div>"; return; }
+  list.innerHTML = rows.map(caseCard).join("");
+}
+$("list").addEventListener("click", function(e){
+  var g = e.target.closest("a.gst"); if(g){ e.stopPropagation(); openTaxpayer(g.dataset.g); return; }
+  var card = e.target.closest(".case"); if(!card) return;
+  var c = db.cases.find(function(x){ return x.id === card.dataset.id; }); if(c) openForm(c);
+});
+["fQ","fStatus","fDue","fStage","fFy","fRf","fRt","fDf","fDt","fAmin","fAmax","fPh","fSort"].forEach(function(id){ $(id).addEventListener("input", renderList); $(id).addEventListener("change", renderList); });
+$("fType").addEventListener("change", function(){ fillStageFilter(); renderList(); });
+$("btnAdv").onclick = function(){ $("adv").classList.toggle("on"); };
+$("btnClear").onclick = function(){
+  ["fQ","fType","fStage","fFy","fRf","fRt","fDf","fDt","fAmin","fAmax","fDue"].forEach(function(id){ $(id).value = ""; });
+  $("fStatus").value = "pending"; $("fPh").checked = false; $("fSort").value = "due"; fillStageFilter(); renderList();
+};
+document.querySelectorAll(".stat").forEach(function(s){
+  s.onclick = function(){
+    var f = s.dataset.f; $("btnClear").onclick();
+    if(f === "dispmonth"){ $("fStatus").value = ""; $("fDue").value = "dispmonth"; }
+    else if(f !== "pending") $("fDue").value = f;
+    renderList();
+  };
+});
+
+/* ---------- taxpayer view ---------- */
+var tpGstin = null;
+function openTaxpayer(g){
+  tpGstin = g;
+  var cs = db.cases.filter(function(c){ return c.gstin === g; });
+  var name = (cs.find(function(c){ return c.name; }) || {}).name || "";
+  $("tpTitle").textContent = g;
+  var pend = cs.filter(function(c){ return c.status !== "disposed"; }).length;
+  var html = '<div style="margin-bottom:10px"><b>' + esc(name) + '</b><div class="hint">' + cs.length + " case(s) · " + pend + " pending" + (g.slice(0,2) === "27" ? " · Maharashtra" : "") + "</div></div>";
+  var tot = {}; cs.forEach(function(c){ var t = TYPES[c.type]; if(!t.amt) return; [0,1,2].forEach(function(i){ var v = num(c["a" + (i+1)]); if(v){ var k = t.short + " — " + t.amt[i]; tot[k] = (tot[k] || 0) + v; } }); });
+  var tk = Object.keys(tot);
+  if(tk.length) html += '<table class="rtable" style="margin-bottom:12px"><tr><th>Amounts</th><th>₹</th></tr>' + tk.map(function(k){ return "<tr><td>" + esc(k) + "</td><td>" + money(tot[k]) + "</td></tr>"; }).join("") + "</table>";
+  html += '<div class="list">' + sortRows(cs).map(caseCard).join("") + "</div>";
+  $("tpBody").innerHTML = html;
+  $("dlgTp").showModal();
+}
+$("tpBody").addEventListener("click", function(e){
+  var card = e.target.closest(".case"); if(!card) return;
+  var c = db.cases.find(function(x){ return x.id === card.dataset.id; }); if(c){ $("dlgTp").close(); openForm(c); }
+});
+$("btnTpClose").onclick = function(){ $("dlgTp").close(); };
+$("btnTpNew").onclick = function(){
+  var c0 = db.cases.find(function(c){ return c.gstin === tpGstin; }) || {};
+  $("dlgTp").close(); openForm(null, {gstin:tpGstin, name:c0.name || ""});
+};
+
+/* =====================================================================
+   CALENDAR
+   ===================================================================== */
+var calMonth = null, calSel = null;
+function calEvents(){
+  var ev = {};
+  function add(date, item){ if(!date) return; (ev[date] = ev[date] || []).push(item); }
+  db.cases.forEach(function(c){
+    if(c.status === "disposed") return;
+    var a = activeDue(c), t = TYPES[c.type] || TYPES.OTHER;
+    if(a) add(a.date, {c:c, kind:state(c) === "over" ? "over" : "due", text:t.short + ": " + a.label});
+    if(c.hear) add(c.hear, {c:c, kind:"ph", text:t.short + ": hearing / visit"});
+  });
+  return ev;
+}
+function renderCalendar(){
+  var ev = calEvents(), y = calMonth.getFullYear(), m = calMonth.getMonth();
+  $("calTitle").textContent = calMonth.toLocaleDateString("en-IN",{month:"long",year:"numeric"});
+  var first = new Date(y, m, 1), offset = (first.getDay() + 6) % 7, startD = new Date(y, m, 1 - offset);
+  var html = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(function(d){ return '<div class="h">' + d + "</div>"; }).join("");
+  var tIso = todayIso();
+  for(var i=0;i<42;i++){
+    var d = new Date(startD); d.setDate(startD.getDate() + i); var s = iso(d), list = ev[s] || [];
+    if(i >= 35 && d.getMonth() !== m) break;
+    html += '<div class="c' + (d.getMonth() !== m ? " out" : "") + (s === tIso ? " today" : "") + (s === calSel ? " sel" : "") + '" data-d="' + s + '"><div class="dn">' + d.getDate() + "</div>" +
+      list.slice(0,3).map(function(e){ return '<div class="ev ' + e.kind + '">' + esc(e.c.name || e.text) + "</div>"; }).join("") +
+      (list.length > 3 ? '<div class="hint" style="font-size:10px">+' + (list.length - 3) + "</div>" : "") + "</div>";
+  }
+  $("cal").innerHTML = html;
+  renderDay(ev);
+}
+function renderDay(ev){
+  if(!calSel){ $("dayTitle").textContent = "Select a day"; $("dayList").innerHTML = '<div class="hint">Tap a date to see what is due.</div>'; return; }
+  var list = (ev || calEvents())[calSel] || [];
+  $("dayTitle").textContent = fmt(calSel);
+  $("dayList").innerHTML = list.length ? list.map(function(e){
+    return '<div class="it" data-id="' + e.c.id + '"><span class="badge ' + (e.kind === "over" ? "b-over" : e.kind === "ph" ? "b-soon" : "b-ok") + '">' + (e.kind === "ph" ? "Hearing" : e.kind === "over" ? "Overdue" : "Due") + "</span> " +
+      esc(e.text) + ' — <b>' + esc(e.c.name || "(no name)") + "</b> " + '<span class="hint">' + esc(e.c.gstin || "") + "</span></div>";
+  }).join("") : '<div class="hint">Nothing due on this day.</div>';
+}
+$("cal").addEventListener("click", function(e){ var c = e.target.closest(".c"); if(!c) return; calSel = c.dataset.d; renderCalendar(); });
+$("dayList").addEventListener("click", function(e){ var it = e.target.closest(".it"); if(!it) return; var c = db.cases.find(function(x){ return x.id === it.dataset.id; }); if(c) openForm(c); });
+$("calPrev").onclick = function(){ calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1); renderCalendar(); };
+$("calNext").onclick = function(){ calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()+1, 1); renderCalendar(); };
+
+function icsEsc(s){ return String(s || "").replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n"); }
+$("btnIcs").onclick = function(){
+  var names = $("icsNames").checked, ev = calEvents(), stamp = new Date().toISOString().replace(/[-:]/g,"").slice(0,15) + "Z";
+  var out = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//GST Case Tracker//EN","CALSCALE:GREGORIAN","METHOD:PUBLISH"], n = 0;
+  Object.keys(ev).forEach(function(date){
+    ev[date].forEach(function(e){
+      var c = e.c, who = names ? (c.name || "") + (c.gstin ? " (" + c.gstin + ")" : "") : (c.ref || "case " + c.id.slice(-4));
+      var end = addDays(date, 1);
+      out.push("BEGIN:VEVENT","UID:" + c.id + "-" + e.kind + "-" + date + "@gst-case-tracker","DTSTAMP:" + stamp,
+        "DTSTART;VALUE=DATE:" + date.replace(/-/g,""),"DTEND;VALUE=DATE:" + end.replace(/-/g,""),
+        "SUMMARY:" + icsEsc((e.kind === "ph" ? "Hearing/visit — " : "Due — ") + e.text + " — " + who),
+        "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:" + icsEsc(e.text),"TRIGGER:-P1D","END:VALARM","END:VEVENT");
+      n++;
+    });
+  });
+  out.push("END:VCALENDAR");
+  if(!n){ toast("No pending due dates or hearings to export"); return; }
+  download("gst-due-dates-" + todayIso() + ".ics", out.join("\r\n"), "text/calendar;charset=utf-8");
+  toast(n + " calendar entries exported");
+};
+
+/* =====================================================================
+   REPORTS
+   ===================================================================== */
+function monthBounds(ym){ var p = ym.split("-"), y = +p[0], m = +p[1]; return {start:ym + "-01", end:iso(new Date(y, m, 0))}; }
+function mprCounts(cs, ym){
+  var b = monthBounds(ym);
+  var disposedBy = function(c, d){ return c.status === "disposed" && c.disposed && c.disposed <= d; };
+  return {
+    open: cs.filter(function(c){ return c.recv && c.recv < b.start && !disposedBy(c, addDays(b.start,-1)); }).length,
+    recv: cs.filter(function(c){ return c.recv && c.recv >= b.start && c.recv <= b.end; }).length,
+    disp: cs.filter(function(c){ return c.status === "disposed" && c.disposed >= b.start && c.disposed <= b.end; }).length,
+    close: cs.filter(function(c){ return c.recv && c.recv <= b.end && !disposedBy(c, b.end); }).length
+  };
+}
+function renderReports(){
+  var ym = $("rMonth").value || thisMonth();
+  $("mprTitle").textContent = "Monthly progress — " + monthName(ym);
+  var rows = "", T = {open:0,recv:0,disp:0,close:0};
+  TYPE_KEYS.forEach(function(k){
+    var r = mprCounts(db.cases.filter(function(c){ return c.type === k; }), ym);
+    if(!r.open && !r.recv && !r.disp && !r.close) return;
+    Object.keys(T).forEach(function(x){ T[x] += r[x]; });
+    rows += "<tr><td>" + esc(TYPES[k].label) + "</td><td>" + r.open + "</td><td>" + r.recv + "</td><td>" + r.disp + "</td><td>" + r.close + "</td></tr>";
+  });
+  $("mpr").innerHTML = "<tr><th>Case type</th><th>Opening</th><th>Received</th><th>Disposed</th><th>Closing</th></tr>" +
+    (rows || '<tr><td colspan="5" class="hint">No cases in this month.</td></tr>') +
+    (rows ? '<tr class="tot"><td>Total</td><td>' + T.open + "</td><td>" + T.recv + "</td><td>" + T.disp + "</td><td>" + T.close + "</td></tr>" : "");
+
+  // ageing
+  var buckets = [[0,30,"0–30"],[31,60,"31–60"],[61,90,"61–90"],[91,1e9,"Over 90"]], ar = "", AT = [0,0,0,0,0];
+  var tI = todayIso();
+  TYPE_KEYS.forEach(function(k){
+    var pend = db.cases.filter(function(c){ return c.type === k && c.status !== "disposed" && c.recv; });
+    if(!pend.length) return;
+    var cnt = buckets.map(function(b){ return pend.filter(function(c){ var a = daysBetween(c.recv, tI); return a >= b[0] && a <= b[1]; }).length; });
+    cnt.forEach(function(v,i){ AT[i] += v; }); AT[4] += pend.length;
+    ar += "<tr><td>" + esc(TYPES[k].label) + "</td>" + cnt.map(function(v,i){ return "<td" + (i === 3 && v ? ' class="warn"' : "") + ">" + v + "</td>"; }).join("") + "<td><b>" + pend.length + "</b></td></tr>";
+  });
+  $("ageing").innerHTML = "<tr><th>Case type</th>" + buckets.map(function(b){ return "<th>" + b[2] + "</th>"; }).join("") + "<th>Total</th></tr>" +
+    (ar ? ar + '<tr class="tot"><td>Total</td>' + AT.map(function(v){ return "<td>" + v + "</td>"; }).join("") + "</tr>" : '<tr><td colspan="6" class="hint">No pending cases.</td></tr>');
+
+  // amounts (month and FY to date, cases disposed in the period)
+  var fy = fyOf(monthBounds(ym).start), fyStart = fyStartYear(fy) + "-04-01", mEnd = monthBounds(ym).end, mStart = monthBounds(ym).start;
+  $("amtTitle").textContent = "Amounts — cases disposed in " + monthName(ym) + " and FY " + fy + " to date";
+  var am = "";
+  TYPE_KEYS.forEach(function(k){
+    var t = TYPES[k]; if(!t.amt) return;
+    var mo = db.cases.filter(function(c){ return c.type === k && c.status === "disposed" && c.disposed >= mStart && c.disposed <= mEnd; });
+    var fyc = db.cases.filter(function(c){ return c.type === k && c.status === "disposed" && c.disposed >= fyStart && c.disposed <= mEnd; });
+    if(!fyc.length) return;
+    var s = function(arr, f){ return arr.reduce(function(a,c){ return a + num(c[f]); }, 0); };
+    [0,1,2].forEach(function(i){
+      if(t.amt[i] === "—") return;
+      am += "<tr><td>" + esc(t.short) + " — " + esc(t.amt[i]) + "</td><td>" + money(s(mo, "a" + (i+1))) + "</td><td>" + money(s(fyc, "a" + (i+1))) + "</td></tr>";
+    });
+  });
+  $("amts").innerHTML = "<tr><th>Item</th><th>" + esc(monthName(ym)) + "</th><th>FY " + fy + " to date</th></tr>" + (am || '<tr><td colspan="3" class="hint">No disposed cases with amounts in this FY.</td></tr>');
+  var rec = db.cases.filter(function(c){ return c.status === "disposed" && c.disposed >= fyStart && c.disposed <= mEnd && c.type !== "REF" && c.type !== "NGTP"; }).reduce(function(a,c){ return a + num(c.a2); }, 0);
+  $("amtNote").innerHTML = "Revenue realised through DRC-03 / recovery in FY " + fy + " to date (all case types except refund and NGTP): <b>" + money(rec) + "</b>.";
+
+  // interest table
+  var ir = db.cases.filter(function(c){ return c.type === "REF"; }).map(function(c){ return {c:c, r:refundInterest(c)}; }).filter(function(x){ return x.r; });
+  ir.sort(function(a,b){ return b.r.amount - a.r.amount; });
+  $("intTable").innerHTML = "<tr><th>Taxpayer</th><th>Filed</th><th>Days beyond 60</th><th>On amount</th><th>Interest (est.)</th></tr>" +
+    (ir.length ? ir.map(function(x){ return "<tr><td>" + esc(x.c.name || x.c.gstin || "—") + (x.r.paid ? ' <span class="hint">(refunded)</span>' : "") + "</td><td>" + fmt(x.c.recv) + "</td><td>" + x.r.days + "</td><td>" + money(x.r.base) + "</td><td><b>" + money(x.r.amount) + "</b></td></tr>"; }).join("")
+      : '<tr><td colspan="5" class="hint">No refund is past 60 days.</td></tr>');
+
+  renderCharts(ym);
+}
+$("rMonth").addEventListener("change", renderReports);
+$("btnPrint").onclick = function(){ window.print(); };
+
+/* ---------- charts (inline SVG) ---------- */
+var tip = $("tip");
+function bindTips(root){
+  root.querySelectorAll("[data-tip]").forEach(function(el){
+    var show = function(e){ var p = e.touches ? e.touches[0] : e; tip.innerHTML = el.getAttribute("data-tip"); tip.style.display = "block";
+      tip.style.left = Math.min(p.clientX + 12, window.innerWidth - tip.offsetWidth - 8) + "px"; tip.style.top = (p.clientY - tip.offsetHeight - 10) + "px"; };
+    el.addEventListener("mousemove", show); el.addEventListener("touchstart", show, {passive:true});
+    el.addEventListener("mouseleave", function(){ tip.style.display = "none"; });
+  });
+}
+document.addEventListener("touchstart", function(e){ if(!e.target.closest("[data-tip]")) tip.style.display = "none"; }, {passive:true});
+function colPath(x, yTop, w, base){ var h = base - yTop; if(h <= 0) return ""; var r = Math.min(4, h, w/2);
+  return "M" + x + "," + base + "V" + (yTop + r) + "Q" + x + "," + yTop + " " + (x + r) + "," + yTop + "H" + (x + w - r) + "Q" + (x + w) + "," + yTop + " " + (x + w) + "," + (yTop + r) + "V" + base + "Z"; }
+function barPath(x0, y, len, h){ if(len <= 0) return ""; var r = Math.min(4, len, h/2), x1 = x0 + len;
+  return "M" + x0 + "," + y + "H" + (x1 - r) + "Q" + x1 + "," + y + " " + x1 + "," + (y + r) + "V" + (y + h - r) + "Q" + x1 + "," + (y + h) + " " + (x1 - r) + "," + (y + h) + "H" + x0 + "Z"; }
+function niceMax(v){ if(v <= 4) return 4; var p = Math.pow(10, Math.floor(Math.log10(v))), n = v / p; return (n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; }
+function renderCharts(ym){
+  // months
+  var p = ym.split("-"), months = [];
+  for(var i=5;i>=0;i--){ var d = new Date(+p[0], +p[1]-1-i, 1); months.push(d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0")); }
+  var data = months.map(function(m){ var r = mprCounts(db.cases, m); return {m:m, recv:r.recv, disp:r.disp}; });
+  var W = 460, H = 220, L = 30, R = 8, Tp = 18, B = 26, plotH = H - Tp - B, base = Tp + plotH;
+  var mx = niceMax(Math.max.apply(null, data.map(function(d){ return Math.max(d.recv, d.disp); }).concat([1])));
+  var band = (W - L - R) / data.length, bw = Math.min(22, (band - 14) / 2);
+  var svg = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Received and disposed cases by month">';
+  [0, 0.5, 1].forEach(function(f){ var y = base - f * plotH; svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '" stroke="#e4e7ec" stroke-width="1"/>' + '<text x="' + (L - 6) + '" y="' + (y + 4) + '" text-anchor="end">' + Math.round(f * mx) + "</text>"; });
+  data.forEach(function(d, i){
+    var cx = L + band * i + band / 2, x1 = cx - bw - 1, x2 = cx + 1;
+    var y1 = base - d.recv / mx * plotH, y2 = base - d.disp / mx * plotH;
+    var lbl = new Date(+d.m.slice(0,4), +d.m.slice(5)-1, 1).toLocaleDateString("en-IN",{month:"short"});
+    var tipTxt = "<b>" + esc(monthName(d.m)) + "</b><br>Received: " + d.recv + "<br>Disposed: " + d.disp;
+    svg += '<rect x="' + (L + band * i) + '" y="' + Tp + '" width="' + band + '" height="' + plotH + '" fill="transparent" data-tip="' + esc(tipTxt) + '"/>';
+    svg += '<path d="' + colPath(x1, y1, bw, base) + '" fill="var(--series-1)" pointer-events="none"/>';
+    svg += '<path d="' + colPath(x2, y2, bw, base) + '" fill="var(--series-2)" pointer-events="none"/>';
+    if(d.recv) svg += '<text class="val" x="' + (x1 + bw/2) + '" y="' + (y1 - 4) + '" text-anchor="middle">' + d.recv + "</text>";
+    if(d.disp) svg += '<text class="val" x="' + (x2 + bw/2) + '" y="' + (y2 - 4) + '" text-anchor="middle">' + d.disp + "</text>";
+    svg += '<text x="' + cx + '" y="' + (H - 8) + '" text-anchor="middle">' + lbl + "</text>";
+  });
+  svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + base + '" y2="' + base + '" stroke="#98a2b3" stroke-width="1"/></svg>';
+  $("chartMonths").innerHTML = svg; bindTips($("chartMonths"));
+
+  // pending by type
+  var pend = TYPE_KEYS.map(function(k){ return {k:k, n:db.cases.filter(function(c){ return c.type === k && c.status !== "disposed"; }).length}; }).filter(function(x){ return x.n; });
+  if(!pend.length){ $("chartTypes").innerHTML = '<div class="hint">No pending cases.</div>'; return; }
+  pend.sort(function(a,b){ return b.n - a.n; });
+  var rowH = 28, LW = 110, W2 = 460, H2 = pend.length * rowH + 8, mx2 = Math.max.apply(null, pend.map(function(x){ return x.n; }));
+  var s2 = '<svg viewBox="0 0 ' + W2 + " " + H2 + '" role="img" aria-label="Pending cases by type">';
+  pend.forEach(function(x, i){
+    var y = 4 + i * rowH, len = (W2 - LW - 40) * x.n / mx2;
+    s2 += '<g data-tip="' + esc("<b>" + esc(TYPES[x.k].label) + "</b><br>Pending: " + x.n) + '"><rect x="0" y="' + y + '" width="' + W2 + '" height="' + rowH + '" fill="transparent"/>' +
+      '<text x="' + (LW - 8) + '" y="' + (y + rowH/2 + 4) + '" text-anchor="end">' + esc(TYPES[x.k].short) + "</text>" +
+      '<path d="' + barPath(LW, y + (rowH - 18)/2, len, 18) + '" fill="var(--series-1)"/>' +
+      '<text class="val" x="' + (LW + len + 6) + '" y="' + (y + rowH/2 + 4) + '">' + x.n + "</text></g>";
+  });
+  s2 += '<line x1="' + LW + '" x2="' + LW + '" y1="0" y2="' + H2 + '" stroke="#98a2b3" stroke-width="1"/></svg>';
+  $("chartTypes").innerHTML = s2; bindTips($("chartTypes"));
+}
+
+/* =====================================================================
+   DATA: EXPORT / BACKUP / RESTORE-SYNC
+   ===================================================================== */
+function download(name, text, mime){
+  var blob = new Blob([text], {type:mime}), a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+}
+function csvCell(v){ v = v == null ? "" : String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v; }
+$("btnCsv").onclick = function(){
+  var head = ["Case type","GSTIN","Name","ARN/Reference","Period","FY","Section","Stage","Status","First date","Date 2","Date 3","Hearing/visit","Due date","Due for","Basis","Disposed on","Amount 1","Amount 2","Amount 3","Amount labels","Checklist done","Remarks"];
+  var lines = [head];
+  db.cases.forEach(function(c){
+    var t = TYPES[c.type] || TYPES.OTHER, a = activeDue(c), items = checklistFor(c.type);
+    lines.push([t.label,c.gstin,c.name,c.ref,c.period,c.fy,c.sec,c.stage,c.status === "disposed" ? "Disposed" : "Pending",
+      c.recv,c.d1,c.d2,c.hear,a ? a.date : "",a ? a.label : "",a ? a.basis : "",c.disposed,c.a1,c.a2,c.a3,t.amt ? t.amt.join(" / ") : "",
+      items.length ? items.filter(function(it){ return c.checks && c.checks[it]; }).length + "/" + items.length : "",c.remarks]);
+  });
+  download("gst-cases-" + todayIso() + ".csv", "\uFEFF" + lines.map(function(r){ return r.map(csvCell).join(","); }).join("\r\n"), "text/csv;charset=utf-8");
+};
+
+function askPassword(title, msg, altLabel, cb, altCb){
+  $("pwTitle").textContent = title; $("pwMsg").innerHTML = msg; $("pwIn").value = ""; $("pwErr").textContent = "";
+  $("btnPwAlt").textContent = altLabel || ""; $("btnPwAlt").style.visibility = altLabel ? "visible" : "hidden";
+  $("btnPwOk").onclick = function(){ cb($("pwIn").value); };
+  $("btnPwAlt").onclick = function(){ $("dlgPw").close(); if(altCb) altCb(); };
+  $("dlgPw").showModal(); setTimeout(function(){ $("pwIn").focus(); }, 50);
+}
+$("btnPwClose").onclick = function(){ $("dlgPw").close(); };
+$("pwIn").addEventListener("keydown", function(e){ if(e.key === "Enter") $("btnPwOk").click(); });
+
+$("btnBackup").onclick = function(){
+  var name = "gst-case-tracker-backup-" + todayIso() + ".json";
+  if(!hasCrypto){ download(name, JSON.stringify(db), "application/json"); return; }
+  askPassword("Backup", "Set a password to protect the backup file (recommended). You will need it to restore.", "Save without password", function(pw){
+    if(pw.length < 4){ $("pwErr").textContent = "Use at least 4 characters"; return; }
+    var salt = crypto.getRandomValues(new Uint8Array(16));
+    deriveKey(pw, salt).then(function(k){ return encryptWith(k, salt, db); }).then(function(e){
+      download(name, JSON.stringify({gstTrackerBackup:2, enc:e}), "application/json"); $("dlgPw").close(); toast("Protected backup saved");
+    });
+  }, function(){ download(name, JSON.stringify(Object.assign({gstTrackerBackup:2}, db)), "application/json"); toast("Backup saved"); });
+};
+$("btnRestore").onclick = function(){ $("fileRestore").click(); };
+$("fileRestore").onchange = function(e){
+  var f = e.target.files[0]; if(!f) return;
+  var r = new FileReader();
+  r.onload = function(){
+    var data; e.target.value = "";
+    try { data = JSON.parse(r.result); } catch(err){ toast("That file isn't a valid tracker backup"); return; }
+    if(data && data.enc){
+      if(!hasCrypto){ toast("This browser can't open protected backups"); return; }
+      askPassword("Restore", "This backup is password-protected.", null, function(pw){
+        decryptWith(pw, data.enc).then(function(res){ $("dlgPw").close(); mergeIn(res.data); }).catch(function(){ $("pwErr").textContent = "Wrong password"; });
+      });
+    } else mergeIn(data);
+  };
+  r.readAsText(f);
+};
+function mergeIn(data){
+  if(!data || !Array.isArray(data.cases)){ toast("That file isn't a valid tracker backup"); return; }
+  data = normalise(data);
+  var added = 0, updated = 0, removed = 0, byId = {};
+  db.cases.forEach(function(c){ byId[c.id] = c; });
+  Object.keys(data.deleted).forEach(function(id){ db.deleted[id] = Math.max(db.deleted[id] || 0, data.deleted[id]); });
+  data.cases.forEach(function(c){
+    if(!c || !c.id) return;
+    if(db.deleted[c.id] && db.deleted[c.id] >= c.updatedAt) return;
+    var mine = byId[c.id];
+    if(!mine){ db.cases.push(c); byId[c.id] = c; added++; }
+    else if(c.updatedAt > mine.updatedAt){ Object.keys(mine).forEach(function(k){ delete mine[k]; }); Object.assign(mine, c); updated++; }
+  });
+  db.cases = db.cases.filter(function(c){ var del = db.deleted[c.id] && db.deleted[c.id] >= c.updatedAt; if(del) removed++; return !del; });
+  data.holidays.forEach(function(h){ if(db.holidays.indexOf(h) < 0) db.holidays.push(h); });
+  Object.keys(data.checklists).forEach(function(k){ if(!db.checklists[k]) db.checklists[k] = data.checklists[k]; });
+  persist(); renderAll();
+  toast("Sync done — " + added + " added, " + updated + " updated" + (removed ? ", " + removed + " removed" : ""));
+}
+
+/* ---------- import ---------- */
+var IMP_FIELDS = [
+  ["gstin","GSTIN",/gstin|gst no|gst number/],
+  ["name","Name",/trade|legal|name|taxpayer|dealer/],
+  ["ref","ARN / reference",/arn|ref|din|case no|case id|application/],
+  ["period","Period",/period|tax period|month|return period/],
+  ["fy","Financial year",/^fy|financial year|f\.y/],
+  ["recv","First date (received / filed)",/date of filing|filing date|arn date|received|allot|date/],
+  ["d1","Date 2",/ack|issued|intimation/],
+  ["d2","Date 3",/reply|concluded|paid/],
+  ["hear","Hearing / visit date",/hearing|visit/],
+  ["stage","Stage",/stage|status/],
+  ["a1","Amount 1 (claimed / discrepancy / tax)",/amount|claim|tax|discrep|difference/],
+  ["a2","Amount 2 (sanctioned / recovered)",/sanction|recover|paid amount/],
+  ["remarks","Remarks",/remark|note|comment/]
+];
+var impRows = null, impHead = null;
+function parseCSV(text){
+  text = text.replace(/^\uFEFF/, "");
+  var firstLine = text.split(/\r?\n/)[0] || "", delim = [",",";","\t"].sort(function(a,b){ return firstLine.split(b).length - firstLine.split(a).length; })[0];
+  var rows = [], row = [], cell = "", q = false;
+  for(var i=0;i<text.length;i++){
+    var ch = text[i];
+    if(q){ if(ch === '"'){ if(text[i+1] === '"'){ cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if(ch === '"') q = true;
+    else if(ch === delim){ row.push(cell); cell = ""; }
+    else if(ch === "\n" || ch === "\r"){ if(ch === "\r" && text[i+1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += ch;
+  }
+  if(cell !== "" || row.length){ row.push(cell); rows.push(row); }
+  return rows.filter(function(r){ return r.some(function(c){ return String(c).trim() !== ""; }); });
+}
+var MON = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function toIsoDate(v){
+  if(v == null) return ""; v = String(v).trim(); if(!v) return "";
+  var m;
+  if((m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return iso(new Date(+m[1], +m[2]-1, +m[3]));
+  if((m = v.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/))){ var y = +m[3]; if(y < 100) y += 2000; return iso(new Date(y, +m[2]-1, +m[1])); }
+  if((m = v.match(/^(\d{1,2})[\s\-\/]([A-Za-z]{3})[A-Za-z]*[\s\-\/,]+(\d{2,4})$/)) && MON[m[2].toLowerCase()]){ var y2 = +m[3]; if(y2 < 100) y2 += 2000; return iso(new Date(y2, MON[m[2].toLowerCase()]-1, +m[1])); }
+  if(/^\d{5}(\.\d+)?$/.test(v)){ var n = +v; if(n > 20000 && n < 80000){ var d = new Date(1899, 11, 30); d.setDate(d.getDate() + Math.floor(n)); return iso(d); } }
+  return "";
+}
+function guessType(v){
+  v = String(v || "").toLowerCase();
+  if(!v) return "";
+  if(TYPES[v.toUpperCase()]) return v.toUpperCase();
+  if(/refund|rfd/.test(v)) return "REF";
+  if(/revoc/.test(v)) return "REG_REV";
+  if(/cancel/.test(v)) return "REG_CAN";
+  if(/regist|reg-01|new reg/.test(v)) return "REG_NEW";
+  if(/01b/.test(v)) return "DRC01B";
+  if(/01c/.test(v)) return "DRC01C";
+  if(/01a/.test(v)) return "DRC01A";
+  if(/scrut|asmt/.test(v)) return "SCR";
+  if(/audit|adt/.test(v)) return "AUDIT";
+  if(/ngtp|non.?genuine/.test(v)) return "NGTP";
+  if(/scn|show cause|drc-01|adjud|demand/.test(v)) return "SCN";
+  return "";
+}
+function loadSheetJS(){
+  return new Promise(function(res, rej){
+    if(window.XLSX) return res();
+    var s = document.createElement("script"); s.src = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
+    s.onload = function(){ res(); }; s.onerror = function(){ rej(); }; document.head.appendChild(s);
+  });
+}
+$("impFile").onchange = function(e){
+  var f = e.target.files[0]; if(!f) return; e.target.value = "";
+  var isX = /\.xlsx?$/i.test(f.name), r = new FileReader();
+  if(isX){
+    loadSheetJS().then(function(){
+      r.onload = function(){
+        try {
+          var wb = XLSX.read(new Uint8Array(r.result), {type:"array", cellDates:true});
+          var ws = wb.Sheets[wb.SheetNames[0]];
+          startMapping(XLSX.utils.sheet_to_json(ws, {header:1, raw:false, dateNF:"yyyy-mm-dd", defval:""}), f.name);
+        } catch(err){ toast("Couldn't read that Excel file — try saving it as CSV"); }
+      };
+      r.readAsArrayBuffer(f);
+    }).catch(function(){ toast("Excel reader needs internet. Save the sheet as CSV and import that instead."); });
+  } else {
+    r.onload = function(){ startMapping(parseCSV(r.result), f.name); };
+    r.readAsText(f);
+  }
+};
+function startMapping(rows, fname){
+  if(!rows || rows.length < 2){ toast("No data rows found in " + fname); return; }
+  impHead = rows[0].map(function(h){ return String(h).trim(); }); impRows = rows.slice(1);
+  $("impInfo").textContent = fname + " — " + impRows.length + " row(s), " + impHead.length + " column(s).";
+  var opts = '<option value="">— not in file —</option>' + impHead.map(function(h, i){ return '<option value="' + i + '">' + esc(h || "Column " + (i+1)) + "</option>"; }).join("");
+  var used = {};
+  var typeCol = impHead.findIndex(function(h){ return /case type|type|module|category/i.test(h); });
+  $("impTypeMode").innerHTML = (typeCol >= 0 ? '<option value="col:' + typeCol + '">From column “' + esc(impHead[typeCol]) + '” (auto-detect)</option>' : "") +
+    impHead.map(function(h,i){ return i === typeCol ? "" : '<option value="col:' + i + '">From column “' + esc(h) + '” (auto-detect)</option>'; }).join("") +
+    TYPE_KEYS.map(function(k){ return '<option value="fix:' + k + '"' + (typeCol < 0 && k === "SCR" ? " selected" : "") + ">All rows: " + esc(TYPES[k].label) + "</option>"; }).join("");
+  if(typeCol >= 0) used[typeCol] = true;
+  $("impMap").innerHTML = IMP_FIELDS.map(function(f){
+    var g = -1;
+    for(var i=0;i<impHead.length;i++){ if(!used[i] && f[2].test(impHead[i].toLowerCase())){ g = i; break; } }
+    if(g >= 0) used[g] = true;
+    return '<div class="maprow"><label>' + esc(f[1]) + '</label><select data-f="' + f[0] + '">' + opts.replace('value="' + g + '"', 'value="' + g + '" selected') + "</select></div>";
+  }).join("");
+  impPreview();
+  $("dlgImp").showModal();
+}
+function impBuild(){
+  var map = {}; $("impMap").querySelectorAll("select").forEach(function(s){ if(s.value !== "") map[s.dataset.f] = +s.value; });
+  var mode = $("impTypeMode").value, out = [];
+  impRows.forEach(function(r){
+    var type = mode.indexOf("fix:") === 0 ? mode.slice(4) : (guessType(r[+mode.slice(4)]) || "OTHER");
+    var c = {type:type, status:"pending", checks:{}};
+    Object.keys(map).forEach(function(f){
+      var v = String(r[map[f]] == null ? "" : r[map[f]]).trim();
+      if(["recv","d1","d2","hear"].indexOf(f) >= 0) v = toIsoDate(v);
+      else if(f === "a1" || f === "a2") v = v.replace(/[₹,\s]/g, "");
+      else if(f === "gstin") v = v.toUpperCase();
+      else if(f === "fy"){ var m = v.match(/(20\d{2})\D*(\d{2,4})?/); v = m ? m[1] + "-" + String(+m[1] + 1).slice(2) : ""; }
+      c[f] = v;
+    });
+    var st = TYPES[type].stages, sv = c.stage;
+    c.stage = sv && st.indexOf(sv) >= 0 ? sv : st[0];
+    if(sv && st.indexOf(sv) < 0) c.remarks = (c.remarks ? c.remarks + " · " : "") + "Imported status: " + sv;
+    if(!c.recv) c.recv = todayIso();
+    if(TYPES[type].lim && c.fy){ var y = fyStartYear(c.fy); c.ar = (y+1) + "-12-31"; c.sec = y >= 2024 ? "74A" : ""; }
+    out.push(c);
+  });
+  return out;
+}
+function impPreview(){
+  var rows = impBuild(), skip = $("impSkip").checked, dup = 0;
+  if(skip) rows.forEach(function(c){ if(isDup(c)) dup++; });
+  var noDate = impRows.length && !$("impMap").querySelector('select[data-f="recv"]').value;
+  $("impPreview").innerHTML = "<b>" + (rows.length - dup) + "</b> case(s) will be added" + (dup ? ", " + dup + " duplicate(s) skipped" : "") + "." +
+    (noDate ? '<br><span class="warn">No date column chosen — today\'s date will be used as the date received.</span>' : "") +
+    '<br>First row: ' + (rows[0] ? esc(TYPES[rows[0].type].short + " · " + (rows[0].gstin || "—") + " · " + (rows[0].name || "—") + " · " + fmt(rows[0].recv)) : "—");
+}
+function isDup(c){ return db.cases.some(function(x){ return x.type === c.type && (x.gstin || "") === (c.gstin || "") && (x.ref || "") === (c.ref || "") && (c.gstin || c.ref); }); }
+$("impMap").addEventListener("change", impPreview); $("impTypeMode").addEventListener("change", impPreview); $("impSkip").addEventListener("change", impPreview);
+$("btnImpClose").onclick = function(){ $("dlgImp").close(); };
+$("btnImpGo").onclick = function(){
+  var rows = impBuild(), skip = $("impSkip").checked, n = 0, now = todayIso();
+  rows.forEach(function(c, i){
+    if(skip && isDup(c)) return;
+    c.id = Date.now().toString(36) + i.toString(36) + Math.random().toString(36).slice(2,5);
+    c.created = now; c.updatedAt = Date.now(); c.history = [{on:now, text:"Imported"}];
+    db.cases.push(c); n++;
+  });
+  persist(); $("dlgImp").close(); renderAll(); toast(n + " case(s) imported");
+};
+
+/* =====================================================================
+   SETTINGS: PIN, HOLIDAYS, CHECKLISTS, ERASE
+   ===================================================================== */
+function renderSettings(){
+  $("hol").value = db.holidays.slice().sort().join("\n");
+  showChecklistEditor();
+  var box = $("pinBox");
+  if(!hasCrypto){ box.innerHTML = '<div class="hint warn">PIN lock needs a secure (https) page. It will work once the app is on GitHub Pages.</div>'; return; }
+  var auto = '<div style="margin-top:10px"><label>Lock automatically after</label><select id="autoLock">' +
+    [[5,"5 minutes idle"],[10,"10 minutes idle"],[15,"15 minutes idle"],[30,"30 minutes idle"],[-1,"Never (lock manually)"]].map(function(o){ return '<option value="' + o[0] + '"' + (+db.settings.autolock === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></div>";
+  if(pinKey){
+    box.innerHTML = '<div class="hint" style="margin-bottom:8px">✓ PIN is on — data on this device is encrypted.</div><div class="rowbtns"><button id="btnPinChange">Change PIN</button><button class="danger" id="btnPinOff">Remove PIN</button><button id="btnLock2">Lock now</button></div>' + auto;
+    $("btnPinChange").onclick = function(){ setPinFlow(true); };
+    $("btnPinOff").onclick = function(){
+      askPassword("Remove PIN", "Enter your current PIN. Data will then be stored without encryption.", null, function(pw){
+        verifyPin(pw).then(function(ok){ if(!ok){ $("pwErr").textContent = "Wrong PIN"; return; } pinKey = null; pinSalt = null; persist(); $("dlgPw").close(); start(); toast("PIN removed"); });
+      });
+    };
+    $("btnLock2").onclick = showLock;
+  } else {
+    box.innerHTML = '<div class="rowbtns"><button class="primary" id="btnPinSet">Set a PIN</button></div>' + auto;
+    $("btnPinSet").onclick = function(){ setPinFlow(false); };
+  }
+  $("autoLock").onchange = function(){ db.settings.autolock = +this.value; persist(); };
+}
+function verifyPin(pw){
+  var parsed = JSON.parse(readRaw() || "{}");
+  if(!parsed.enc) return Promise.resolve(false);
+  return decryptWith(pw, parsed.enc).then(function(){ return true; }).catch(function(){ return false; });
+}
+function setPinFlow(change){
+  var go = function(){
+    askPassword(change ? "New PIN" : "Set a PIN", "Choose a PIN of at least 4 digits.", null, function(p1){
+      if(!/^\d{4,12}$/.test(p1)){ $("pwErr").textContent = "Use 4 to 12 digits"; return; }
+      askPassword("Confirm PIN", "Enter the same PIN again.", null, function(p2){
+        if(p2 !== p1){ $("pwErr").textContent = "PINs don't match"; return; }
+        var salt = crypto.getRandomValues(new Uint8Array(16));
+        deriveKey(p1, salt).then(function(k){ pinKey = k; pinSalt = salt; persist(); return saveChain; }).then(function(){ $("dlgPw").close(); start(); toast("PIN set — data is now encrypted"); });
+      });
+    });
+  };
+  if(!change) return go();
+  askPassword("Change PIN", "Enter your current PIN.", null, function(pw){ verifyPin(pw).then(function(ok){ if(!ok){ $("pwErr").textContent = "Wrong PIN"; return; } go(); }); });
+}
+$("btnHolSave").onclick = function(){
+  db.holidays = $("hol").value.split(/\s+/).filter(function(s){ return /^\d{4}-\d{2}-\d{2}$/.test(s); });
+  persist(); renderAll(); toast(db.holidays.length + " holiday(s) saved");
+};
+function showChecklistEditor(){ var k = $("clType").value || TYPE_KEYS[0]; $("clText").value = checklistFor(k).join("\n"); }
+$("clType").addEventListener("change", showChecklistEditor);
+$("btnClSave").onclick = function(){
+  db.checklists[$("clType").value] = $("clText").value.split("\n").map(function(s){ return s.trim(); }).filter(Boolean);
+  persist(); toast("Checklist saved");
+};
+$("btnClReset").onclick = function(){ delete db.checklists[$("clType").value]; persist(); showChecklistEditor(); toast("Default checklist restored"); };
+$("btnErase").onclick = function(){
+  confirmBox("<b>Erase all cases, holidays and settings on this device?</b><br><br>This cannot be undone. Take a backup first if you may need the data.", "Erase everything", function(){
+    try { localStorage.removeItem(KEY); } catch(e){}
+    db = normalise(null); pinKey = null; pinSalt = null; start(); toast("All data erased");
+  });
+};
+
+boot();
+})();
+</script>
+</body>
+</html>
